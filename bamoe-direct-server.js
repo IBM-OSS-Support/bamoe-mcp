@@ -2,8 +2,13 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
-// Use environment variable or default to localhost for local development
-const BAMOE_BASE_URL = process.env.BAMOE_BASE_URL || 'http://localhost/dev-deployment-y95ykp145';
+// Use environment variable or default
+// Default to host.docker.internal for Docker deployments, fallback to localhost for local dev
+const DEPLOYMENT_ID = process.env.DEPLOYMENT_ID || 'y95ykp145';
+const BAMOE_HOST = process.env.BAMOE_HOST || process.env.BAMOE_DEPLOYMENT_HOST || 'host.docker.internal';
+const BAMOE_BASE_URL = process.env.BAMOE_BASE_URL || `http://${BAMOE_HOST}/dev-deployment-${DEPLOYMENT_ID}`;
+
+console.error(`[BAMOE] Configuration: DEPLOYMENT_ID=${DEPLOYMENT_ID}, BAMOE_HOST=${BAMOE_HOST}, BAMOE_BASE_URL=${BAMOE_BASE_URL}`);
 
 const server = new Server(
   {
