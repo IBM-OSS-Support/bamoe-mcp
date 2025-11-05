@@ -1,0 +1,119 @@
+'use strict';
+
+var emitter_cjs = require('../../../emitter/emitter.cjs');
+var base_cjs = require('../../base.cjs');
+var message_cjs = require('../../../backend/message.cjs');
+var prompts_cjs = require('./prompts.cjs');
+var unconstrainedMemory_cjs = require('../../../memory/unconstrainedMemory.cjs');
+var base_cjs$1 = require('../../../tools/base.cjs');
+
+var __defProp = Object.defineProperty;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
+class RePlanAgent extends base_cjs.BaseAgent {
+  static {
+    __name(this, "RePlanAgent");
+  }
+  input;
+  emitter;
+  constructor(input) {
+    super(), this.input = input, this.emitter = emitter_cjs.Emitter.root.child({
+      namespace: [
+        "agent",
+        "rePlan"
+      ],
+      creator: this
+    });
+  }
+  async _run(input, _options, context) {
+    if (input.prompt !== null) {
+      await this.memory.add(new message_cjs.UserMessage(input.prompt));
+    }
+    const runner = await this.createRunner(context);
+    let finalMessage = void 0;
+    while (!finalMessage) {
+      const state = await runner.run();
+      if (state.nextStep.type === "message") {
+        finalMessage = new message_cjs.UserMessage(state.nextStep.message);
+      } else if (state.nextStep.type === "tool") {
+        const toolResults = await runner.tools(state.nextStep.calls);
+        await runner.memory.add(new message_cjs.AssistantMessage(prompts_cjs.RePlanAssistantPrompt.render({
+          results: JSON.stringify(toolResults)
+        })));
+      }
+    }
+    await this.memory.add(finalMessage);
+    return {
+      message: finalMessage,
+      intermediateMemory: runner.memory
+    };
+  }
+  async createRunner(context) {
+    const memory = new unconstrainedMemory_cjs.UnconstrainedMemory();
+    await memory.addMany(this.memory.messages);
+    const run = /* @__PURE__ */ __name(async () => {
+      const schema = await prompts_cjs.createRePlanOutputSchema(this.input.tools);
+      const response = await this.input.llm.createStructure({
+        schema: schema.definition,
+        abortSignal: context.signal,
+        messages: memory.messages
+      });
+      await memory.add(new message_cjs.AssistantMessage(JSON.stringify(response)));
+      await context.emitter.emit("update", {
+        state: response.object
+      });
+      return response.object;
+    }, "run");
+    const tools = /* @__PURE__ */ __name(async (calls) => {
+      return await Promise.all(calls.map(async (call) => {
+        const tool = this.input.tools.find((tool2) => tool2.name === call.name);
+        if (!tool) {
+          throw new base_cjs.AgentError(`Tool ${call.name} does not exist.`);
+        }
+        const meta = {
+          input: call,
+          tool,
+          calls
+        };
+        await context.emitter.emit("tool", {
+          type: "start",
+          ...meta
+        });
+        try {
+          const output = await tool.run(call.input, {
+            signal: context.signal
+          }).context({
+            [base_cjs$1.Tool.contextKeys.Memory]: memory
+          });
+          await context.emitter.emit("tool", {
+            type: "success",
+            ...meta,
+            output
+          });
+          return output;
+        } catch (error) {
+          await context.emitter.emit("tool", {
+            type: "error",
+            ...meta,
+            error
+          });
+          throw error;
+        }
+      }));
+    }, "tools");
+    return {
+      memory,
+      run,
+      tools
+    };
+  }
+  get memory() {
+    return this.input.memory;
+  }
+  set memory(memory) {
+    this.input.memory = memory;
+  }
+}
+
+exports.RePlanAgent = RePlanAgent;
+//# sourceMappingURL=agent.cjs.map
+//# sourceMappingURL=agent.cjs.map

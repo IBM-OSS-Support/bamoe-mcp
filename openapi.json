@@ -1,0 +1,2056 @@
+{
+  "openapi" : "3.1.0",
+  "tags" : [ {
+    "name" : "FraudEvaluation"
+  }, {
+    "name" : "Job Service v1",
+    "description" : "Job Service version 1 API"
+  }, {
+    "name" : "Job Service v2",
+    "description" : "Job Service version 2 API"
+  } ],
+  "components" : {
+    "schemas" : {
+      "FormConfiguration" : {
+        "type" : "object",
+        "properties" : {
+          "schema" : {
+            "type" : "string"
+          },
+          "resources" : {
+            "$ref" : "#/components/schemas/FormResources"
+          }
+        }
+      },
+      "FormContent" : {
+        "type" : "object",
+        "properties" : {
+          "source" : {
+            "type" : "string"
+          },
+          "configuration" : {
+            "$ref" : "#/components/schemas/FormConfiguration"
+          }
+        }
+      },
+      "FormFilter" : {
+        "type" : "object",
+        "properties" : {
+          "names" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "FormResources" : {
+        "type" : "object",
+        "properties" : {
+          "scripts" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "styles" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "FraudEvaluationModelInput" : {
+        "type" : "object",
+        "properties" : {
+          "accountStatus" : {
+            "type" : "string"
+          },
+          "isKnownDevice" : {
+            "type" : "boolean"
+          },
+          "transactionLocation" : {
+            "type" : "string"
+          },
+          "transactionAmount" : {
+            "type" : "number",
+            "format" : "double"
+          }
+        }
+      },
+      "FraudEvaluationModelOutput" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "transactionStatus" : {
+            "type" : "string"
+          },
+          "fraudRisk" : {
+            "type" : "string"
+          }
+        }
+      },
+      "FraudEvaluation__54BB7194_4C8F_485F_AE8F_45E88C30B89B_TaskInput" : {
+        "type" : "object",
+        "properties" : {
+          "fraudRisk" : {
+            "type" : "string"
+          },
+          "Interface" : {
+            "type" : "string"
+          },
+          "Operation" : {
+            "type" : "string"
+          },
+          "interfaceImplementationRef" : {
+            "type" : "string"
+          },
+          "operationImplementationRef" : {
+            "type" : "string"
+          },
+          "implementation" : {
+            "type" : "string"
+          },
+          "interface" : {
+            "type" : "string"
+          },
+          "operation" : {
+            "type" : "string"
+          }
+        }
+      },
+      "FraudEvaluation__54BB7194_4C8F_485F_AE8F_45E88C30B89B_TaskModel" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "state" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "phase" : {
+            "type" : "string"
+          },
+          "phaseStatus" : {
+            "type" : "string"
+          },
+          "parameters" : {
+            "$ref" : "#/components/schemas/FraudEvaluation__54BB7194_4C8F_485F_AE8F_45E88C30B89B_TaskInput"
+          },
+          "results" : {
+            "$ref" : "#/components/schemas/FraudEvaluation__54BB7194_4C8F_485F_AE8F_45E88C30B89B_TaskOutput"
+          },
+          "params" : {
+            "$ref" : "#/components/schemas/FraudEvaluation__54BB7194_4C8F_485F_AE8F_45E88C30B89B_TaskOutput"
+          }
+        }
+      },
+      "FraudEvaluation__54BB7194_4C8F_485F_AE8F_45E88C30B89B_TaskOutput" : {
+        "type" : "object",
+        "properties" : {
+          "transactionStatus" : {
+            "type" : "string"
+          }
+        }
+      },
+      "Job" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "expirationTime" : {
+            "$ref" : "#/components/schemas/ZonedDateTime"
+          },
+          "priority" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "callbackEndpoint" : {
+            "type" : "string"
+          },
+          "processInstanceId" : {
+            "type" : "string"
+          },
+          "rootProcessInstanceId" : {
+            "type" : "string"
+          },
+          "processId" : {
+            "type" : "string"
+          },
+          "rootProcessId" : {
+            "type" : "string"
+          },
+          "nodeInstanceId" : {
+            "type" : "string"
+          },
+          "repeatInterval" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "repeatLimit" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "JobExecutionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "message" : {
+            "type" : "string"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "$ref" : "#/components/schemas/ZonedDateTime"
+          },
+          "jobId" : {
+            "type" : "string"
+          }
+        }
+      },
+      "JobStatus" : {
+        "type" : "string",
+        "enum" : [ "ERROR", "EXECUTED", "SCHEDULED", "RETRY", "CANCELED", "RUNNING" ]
+      },
+      "JobV2" : {
+        "type" : "object",
+        "required" : [ "schedule", "retry", "recipient" ],
+        "description" : "Defines a job that can be managed by the jobs service.",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "description" : "The unique identifier of the job in the system, this value is set by the jobs service."
+          },
+          "correlationId" : {
+            "type" : "string",
+            "description" : "Logical user provided identifier of the job in the system."
+          },
+          "state" : {
+            "$ref" : "#/components/schemas/State"
+          },
+          "schedule" : {
+            "$ref" : "#/components/schemas/Schedule"
+          },
+          "retry" : {
+            "$ref" : "#/components/schemas/Retry"
+          },
+          "recipient" : {
+            "$ref" : "#/components/schemas/Recipient"
+          },
+          "executionTimeout" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Optional configuration that establishes the time limit for the current Job execution attempt to finish. When this timeout is exceeded the execution attempt is considered as failed, and depending on the Job retry  configuration, the execution can be retried or the Job will be marked as ERROR. Every Recipient type has a default timeout configuration that will apply automatically if this value is not set, and a maximum timeout configuration that can not be exceeded by current value."
+          },
+          "executionTimeoutUnit" : {
+            "$ref" : "#/components/schemas/TemporalUnit",
+            "type" : "string",
+            "description" : "The unit for the executionTimeout. If the executionTimeout is set and the unit is left empty MILLISECONDS are assumed. If the unit is set and the executionTimeout is left empty this value is ignored."
+          }
+        }
+      },
+      "ProcessMigrationSpec" : {
+        "type" : "object",
+        "properties" : {
+          "targetProcessId" : {
+            "type" : "string"
+          },
+          "targetProcessVersion" : {
+            "type" : "string"
+          }
+        }
+      },
+      "Recipient" : {
+        "type" : "object",
+        "required" : [ "type" ],
+        "description" : "Generic definition for a Recipient, users must provide instances of subclasses of this schema to create a job.",
+        "discriminator" : {
+          "propertyName" : "type"
+        },
+        "properties" : {
+          "type" : {
+            "type" : "string"
+          }
+        }
+      },
+      "Retry" : {
+        "type" : "object",
+        "description" : "The retry configuration establishes the number of times a failing job execution must be retried before it’s considered as FAILED.",
+        "properties" : {
+          "maxRetries" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Number of retries to execute in case of failures.",
+            "default" : 3
+          },
+          "delay" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Time delay between the retries.",
+            "default" : 0
+          },
+          "delayUnit" : {
+            "$ref" : "#/components/schemas/TemporalUnit"
+          },
+          "maxDuration" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Maximum amount of time to continue retrying if no successful execution was produced.",
+            "default" : 180000
+          },
+          "durationUnit" : {
+            "$ref" : "#/components/schemas/TemporalUnit"
+          }
+        }
+      },
+      "Schedule" : {
+        "type" : "object",
+        "required" : [ "type" ],
+        "description" : "Generic definition for a Schedule, users must provide instances of subclasses of this schema.",
+        "discriminator" : {
+          "propertyName" : "type"
+        },
+        "properties" : {
+          "type" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ScheduledJob" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "expirationTime" : {
+            "$ref" : "#/components/schemas/ZonedDateTime"
+          },
+          "priority" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "callbackEndpoint" : {
+            "type" : "string"
+          },
+          "processInstanceId" : {
+            "type" : "string"
+          },
+          "rootProcessInstanceId" : {
+            "type" : "string"
+          },
+          "processId" : {
+            "type" : "string"
+          },
+          "rootProcessId" : {
+            "type" : "string"
+          },
+          "nodeInstanceId" : {
+            "type" : "string"
+          },
+          "repeatInterval" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "repeatLimit" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "scheduledId" : {
+            "type" : "string"
+          },
+          "retries" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "status" : {
+            "$ref" : "#/components/schemas/JobStatus"
+          },
+          "lastUpdate" : {
+            "$ref" : "#/components/schemas/ZonedDateTime"
+          },
+          "executionCounter" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "executionResponse" : {
+            "$ref" : "#/components/schemas/JobExecutionResponse"
+          }
+        }
+      },
+      "SlaPayload" : {
+        "type" : "object",
+        "properties" : {
+          "expirationTime" : {
+            "$ref" : "#/components/schemas/ZonedDateTime"
+          }
+        }
+      },
+      "SourceFile" : {
+        "type" : "object",
+        "properties" : {
+          "uri" : {
+            "type" : "string"
+          }
+        }
+      },
+      "State" : {
+        "type" : "string",
+        "enum" : [ "SCHEDULED", "RETRY", "EXECUTED", "ERROR", "CANCELED" ],
+        "description" : "Available states for a Job."
+      },
+      "TaskModel" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "state" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "phase" : {
+            "type" : "string"
+          },
+          "phaseStatus" : {
+            "type" : "string"
+          },
+          "parameters" : { },
+          "results" : { }
+        }
+      },
+      "TemporalUnit" : {
+        "type" : "string",
+        "enum" : [ "MILLIS", "SECONDS", "MINUTES", "HOURS", "DAYS" ]
+      },
+      "ZonedDateTime" : {
+        "type" : "string",
+        "format" : "date-time",
+        "examples" : [ "2022-03-10T12:15:50-04:00" ]
+      }
+    }
+  },
+  "paths" : {
+    "/dev-deployment-qx33gh3495/DMN_85B532DA-3AEF-4716-A502-633D8178F974" : {
+      "post" : {
+        "requestBody" : {
+          "description" : "DMN input",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "/dev-deployment-qx33gh3495/FraudRuleEvaluation.json#/definitions/InputSet"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "default" : {
+            "description" : "DMN output",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "/dev-deployment-qx33gh3495/FraudRuleEvaluation.json#/definitions/OutputSet"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Dmn",
+        "tags" : [ "DMN __85 B 532 DA _453 AEF _454716_45 A 502_45633 D 8178 F 974 Resource" ]
+      },
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/xml" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Dmn",
+        "tags" : [ "DMN __85 B 532 DA _453 AEF _454716_45 A 502_45633 D 8178 F 974 Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/DMN_85B532DA-3AEF-4716-A502-633D8178F974/dmnresult" : {
+      "post" : {
+        "requestBody" : {
+          "description" : "DMN input",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "/dev-deployment-qx33gh3495/FraudRuleEvaluation.json#/definitions/InputSet"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Dmn _dmnresult",
+        "tags" : [ "DMN __85 B 532 DA _453 AEF _454716_45 A 502_45633 D 8178 F 974 Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/FraudEvaluation" : {
+      "get" : {
+        "summary" : "FraudEvaluation",
+        "description" : "",
+        "tags" : [ "FraudEvaluation" ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/FraudEvaluationModelOutput"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "summary" : "FraudEvaluation",
+        "description" : "",
+        "tags" : [ "FraudEvaluation" ],
+        "parameters" : [ {
+          "name" : "businessKey",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/FraudEvaluationModelInput"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/dev-deployment-qx33gh3495/FraudEvaluation/TransactionStatus/schema" : {
+      "get" : {
+        "tags" : [ "FraudEvaluation" ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "additionalProperties" : { }
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get Schema _ Transaction Status _0"
+      }
+    },
+    "/dev-deployment-qx33gh3495/FraudEvaluation/schema" : {
+      "get" : {
+        "summary" : "FraudEvaluation",
+        "description" : "",
+        "tags" : [ "FraudEvaluation" ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "additionalProperties" : { }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev-deployment-qx33gh3495/FraudEvaluation/{id}" : {
+      "put" : {
+        "summary" : "FraudEvaluation",
+        "description" : "",
+        "tags" : [ "FraudEvaluation" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/FraudEvaluationModelInput"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FraudEvaluationModelOutput"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "summary" : "FraudEvaluation",
+        "description" : "",
+        "tags" : [ "FraudEvaluation" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/FraudEvaluationModelInput"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FraudEvaluationModelOutput"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get" : {
+        "summary" : "FraudEvaluation",
+        "description" : "",
+        "tags" : [ "FraudEvaluation" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FraudEvaluationModelOutput"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "summary" : "FraudEvaluation",
+        "description" : "",
+        "tags" : [ "FraudEvaluation" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FraudEvaluationModelOutput"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev-deployment-qx33gh3495/FraudEvaluation/{id}/TransactionStatus/{taskId}" : {
+      "put" : {
+        "tags" : [ "FraudEvaluation" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taskId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "group",
+          "in" : "query",
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "user",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/FraudEvaluation__54BB7194_4C8F_485F_AE8F_45E88C30B89B_TaskOutput"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FraudEvaluation__54BB7194_4C8F_485F_AE8F_45E88C30B89B_TaskOutput"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Save Task _ Transaction Status _0"
+      },
+      "get" : {
+        "tags" : [ "FraudEvaluation" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taskId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "group",
+          "in" : "query",
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "user",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FraudEvaluation__54BB7194_4C8F_485F_AE8F_45E88C30B89B_TaskModel"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get Work Item _ Transaction Status _0"
+      },
+      "post" : {
+        "tags" : [ "FraudEvaluation" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taskId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "group",
+          "in" : "query",
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "phase",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : "complete"
+          }
+        }, {
+          "name" : "user",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/FraudEvaluation__54BB7194_4C8F_485F_AE8F_45E88C30B89B_TaskOutput"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FraudEvaluationModelOutput"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Complete Task _ Transaction Status _0"
+      },
+      "delete" : {
+        "tags" : [ "FraudEvaluation" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taskId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "group",
+          "in" : "query",
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "phase",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : "abort"
+          }
+        }, {
+          "name" : "user",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FraudEvaluationModelOutput"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Abort Task _ Transaction Status _0"
+      }
+    },
+    "/dev-deployment-qx33gh3495/FraudEvaluation/{id}/TransactionStatus/{taskId}/phases/{phase}" : {
+      "post" : {
+        "tags" : [ "FraudEvaluation" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "phase",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taskId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "group",
+          "in" : "query",
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "user",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/FraudEvaluation__54BB7194_4C8F_485F_AE8F_45E88C30B89B_TaskOutput"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FraudEvaluationModelOutput"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Task Transition _ Transaction Status _0"
+      }
+    },
+    "/dev-deployment-qx33gh3495/FraudEvaluation/{id}/TransactionStatus/{taskId}/schema" : {
+      "get" : {
+        "tags" : [ "FraudEvaluation" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taskId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "group",
+          "in" : "query",
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "user",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "additionalProperties" : { }
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get Schema And Phases _ Transaction Status _0"
+      }
+    },
+    "/dev-deployment-qx33gh3495/FraudEvaluation/{id}/tasks" : {
+      "get" : {
+        "summary" : "FraudEvaluation",
+        "description" : "",
+        "tags" : [ "FraudEvaluation" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "group",
+          "in" : "query",
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "user",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/TaskModel"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev-deployment-qx33gh3495/callback" : {
+      "post" : {
+        "operationId" : "postCallbackTest",
+        "parameters" : [ {
+          "name" : "limit",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "text/plain" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Post",
+        "tags" : [ "Callback Resource Test" ]
+      },
+      "get" : {
+        "operationId" : "getCallbackTest",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "text/plain" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get",
+        "tags" : [ "Callback Resource Test" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/data-audit/q" : {
+      "post" : {
+        "responses" : {
+          "201" : {
+            "description" : "Created"
+          }
+        }
+      }
+    },
+    "/dev-deployment-qx33gh3495/data-audit/r" : {
+      "get" : {
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      },
+      "post" : {
+        "responses" : {
+          "201" : {
+            "description" : "Created"
+          }
+        }
+      }
+    },
+    "/dev-deployment-qx33gh3495/forms/count" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Forms Count",
+        "tags" : [ "Forms Service" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/forms/list" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "names",
+          "in" : "query",
+          "schema" : {
+            "$ref" : "#/components/schemas/FormFilter"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get Forms List",
+        "tags" : [ "Forms Service" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/forms/{formName}" : {
+      "post" : {
+        "parameters" : [ {
+          "name" : "formName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S+"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/FormContent"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Update Form Content",
+        "tags" : [ "Forms Service" ]
+      },
+      "get" : {
+        "parameters" : [ {
+          "name" : "formName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S+"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get Form Content",
+        "tags" : [ "Forms Service" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/graphql" : {
+      "get" : {
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      },
+      "post" : {
+        "responses" : {
+          "201" : {
+            "description" : "Created"
+          }
+        }
+      }
+    },
+    "/dev-deployment-qx33gh3495/jobs" : {
+      "post" : {
+        "operationId" : "createJob",
+        "tags" : [ "Job Service v1" ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Job"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ScheduledJob"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Create"
+      }
+    },
+    "/dev-deployment-qx33gh3495/jobs/{id}" : {
+      "patch" : {
+        "operationId" : "patchJob",
+        "tags" : [ "Job Service v1" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Job"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ScheduledJob"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Patch"
+      },
+      "get" : {
+        "operationId" : "getJob",
+        "tags" : [ "Job Service v1" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ScheduledJob"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get"
+      },
+      "delete" : {
+        "operationId" : "deleteJob",
+        "tags" : [ "Job Service v1" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ScheduledJob"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Delete"
+      }
+    },
+    "/dev-deployment-qx33gh3495/management/processes" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get Processes",
+        "tags" : [ "Process Instance Management Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/management/processes/sources" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "uri",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get Source File By Uri",
+        "tags" : [ "Source Files Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/management/processes/{processId}" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "processId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get Process Info",
+        "tags" : [ "Process Instance Management Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/management/processes/{processId}/instances/{processInstanceId}" : {
+      "delete" : {
+        "parameters" : [ {
+          "name" : "processId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "processInstanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Cancel Process Instance Id",
+        "tags" : [ "Process Instance Management Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/management/processes/{processId}/instances/{processInstanceId}/error" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "processId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "processInstanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get Instance In Error",
+        "tags" : [ "Process Instance Management Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/management/processes/{processId}/instances/{processInstanceId}/migrate" : {
+      "post" : {
+        "parameters" : [ {
+          "name" : "processId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "processInstanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ProcessMigrationSpec"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Migrate Instance",
+        "tags" : [ "Process Instance Management Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/management/processes/{processId}/instances/{processInstanceId}/nodeInstances" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "processId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "processInstanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get Work Items In Process Instance",
+        "tags" : [ "Process Instance Management Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/management/processes/{processId}/instances/{processInstanceId}/nodeInstances/{nodeInstanceId}" : {
+      "post" : {
+        "parameters" : [ {
+          "name" : "nodeInstanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "processId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "processInstanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Retrigger Node Instance Id",
+        "tags" : [ "Process Instance Management Resource" ]
+      },
+      "delete" : {
+        "parameters" : [ {
+          "name" : "nodeInstanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "processId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "processInstanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Cancel Node Instance Id",
+        "tags" : [ "Process Instance Management Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/management/processes/{processId}/instances/{processInstanceId}/nodeInstances/{nodeInstanceId}/sla" : {
+      "patch" : {
+        "parameters" : [ {
+          "name" : "nodeInstanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "processId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "processInstanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SlaPayload"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Update Node Instance Sla",
+        "tags" : [ "Process Instance Management Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/management/processes/{processId}/instances/{processInstanceId}/nodeInstances/{nodeInstanceId}/timers" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "nodeInstanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "processId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "processInstanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get Node Instance Timers",
+        "tags" : [ "Process Instance Management Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/management/processes/{processId}/instances/{processInstanceId}/nodes/{nodeId}" : {
+      "post" : {
+        "parameters" : [ {
+          "name" : "nodeId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "processId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "processInstanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Trigger Node Instance Id",
+        "tags" : [ "Process Instance Management Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/management/processes/{processId}/instances/{processInstanceId}/retrigger" : {
+      "post" : {
+        "parameters" : [ {
+          "name" : "processId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "processInstanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Retrigger Instance In Error",
+        "tags" : [ "Process Instance Management Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/management/processes/{processId}/instances/{processInstanceId}/skip" : {
+      "post" : {
+        "parameters" : [ {
+          "name" : "processId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "processInstanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Skip Instance In Error",
+        "tags" : [ "Process Instance Management Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/management/processes/{processId}/instances/{processInstanceId}/sla" : {
+      "patch" : {
+        "parameters" : [ {
+          "name" : "processId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "processInstanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SlaPayload"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Update Process Instance Sla",
+        "tags" : [ "Process Instance Management Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/management/processes/{processId}/instances/{processInstanceId}/timers" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "processId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "processInstanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get Process Instance Timers",
+        "tags" : [ "Process Instance Management Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/management/processes/{processId}/migrate" : {
+      "post" : {
+        "parameters" : [ {
+          "name" : "processId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ProcessMigrationSpec"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Migrate All Instances",
+        "tags" : [ "Process Instance Management Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/management/processes/{processId}/nodes" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "processId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get Process Nodes",
+        "tags" : [ "Process Instance Management Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/management/processes/{processId}/source" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "processId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get Source File By Process Id",
+        "tags" : [ "Source Files Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/management/processes/{processId}/sources" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "processId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SourceFile"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get Source Files By Process Id",
+        "tags" : [ "Source Files Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/svg/processes/{processId}" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "processId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get Process Svg",
+        "tags" : [ "Process Svg Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/svg/processes/{processId}/instances/{processInstanceId}" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "processId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "processInstanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get Execution Path By Process Instance Id",
+        "tags" : [ "Process Svg Resource" ]
+      }
+    },
+    "/dev-deployment-qx33gh3495/v2/jobs" : {
+      "post" : {
+        "operationId" : "createJobV2",
+        "tags" : [ "Job Service v2" ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/JobV2"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JobV2"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Create"
+      }
+    },
+    "/dev-deployment-qx33gh3495/v2/jobs/{id}" : {
+      "get" : {
+        "operationId" : "getJobV2",
+        "tags" : [ "Job Service v2" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JobV2"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get"
+      },
+      "delete" : {
+        "operationId" : "deleteJobV2",
+        "tags" : [ "Job Service v2" ],
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JobV2"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Delete"
+      }
+    }
+  },
+  "info" : {
+    "title" : "my-bamoe-business-service API",
+    "version" : "1.0.0-SNAPSHOT"
+  }
+}

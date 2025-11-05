@@ -1,0 +1,24 @@
+import * as R from 'remeda';
+
+var __defProp = Object.defineProperty;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
+function safeSum(...numbers) {
+  return R.sum(numbers?.filter(R.isNonNullish) || [
+    0
+  ]);
+}
+__name(safeSum, "safeSum");
+function takeBigger(...numbers) {
+  return Math.max(...numbers?.filter(R.isNonNullish) || [
+    0
+  ]) || 0;
+}
+__name(takeBigger, "takeBigger");
+function ensureRange(value, options) {
+  return Math.max(options.min ?? -Infinity, Math.min(value, options.max ?? Infinity));
+}
+__name(ensureRange, "ensureRange");
+
+export { ensureRange, safeSum, takeBigger };
+//# sourceMappingURL=number.js.map
+//# sourceMappingURL=number.js.map
