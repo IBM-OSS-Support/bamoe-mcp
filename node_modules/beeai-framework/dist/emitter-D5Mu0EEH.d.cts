@@ -1,0 +1,121 @@
+import { AnyVoid, RequiredAll } from './internals/types.cjs';
+import { Serializable } from './internals/serializable.cjs';
+
+/**
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+type MatcherFn = (event: EventMeta) => boolean;
+type Matcher = "*" | "*.*" | RegExp | MatcherFn;
+type InferCallbackValue<T> = NonNullable<T> extends Callback<infer P> ? P : never;
+type Callback<T> = (value: T, event: EventMeta) => AnyVoid;
+type CleanupFn = () => void;
+type StringKey<T> = Extract<keyof T, string>;
+interface EmitterOptions {
+    isBlocking?: boolean;
+    once?: boolean;
+    persistent?: boolean;
+    matchNested?: boolean;
+}
+interface EventTrace {
+    id: string;
+    runId: string;
+    parentRunId?: string;
+}
+interface EventMeta<C = unknown> {
+    id: string;
+    groupId?: string;
+    name: string;
+    path: string;
+    createdAt: Date;
+    source: Emitter<any>;
+    creator: object;
+    context: C;
+    trace?: EventTrace;
+}
+
+/**
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+interface EmitterInput<E extends object = object> {
+    groupId?: string;
+    namespace?: string[];
+    creator?: object;
+    context?: E & object;
+    trace?: EventTrace;
+}
+interface EmitterChildInput<E extends object = object> {
+    groupId?: string;
+    namespace?: string[];
+    creator?: object;
+    context?: E & object;
+    trace?: EventTrace;
+}
+interface Listener<T = any> {
+    readonly match: MatcherFn;
+    readonly raw: Matcher;
+    readonly callback: Callback<T>;
+    readonly options?: EmitterOptions;
+}
+declare class Emitter<T = Record<keyof any, Callback<unknown>>> extends Serializable {
+    protected listeners: Set<Listener<any>>;
+    protected readonly groupId?: string;
+    readonly namespace: string[];
+    readonly creator?: object;
+    readonly context: object;
+    readonly trace?: EventTrace;
+    protected readonly cleanups: CleanupFn[];
+    constructor(input?: EmitterInput);
+    static get root(): Emitter<Record<string, Callback<any>>>;
+    child<R = T>(input?: EmitterChildInput): Emitter<R>;
+    pipe(target: Emitter<any>): CleanupFn;
+    destroy(): void;
+    reset(): void;
+    registerCallbacks<K extends StringKey<RequiredAll<T>>>(callbacks: Partial<Record<K, NonNullable<T[K]> extends Callback<infer X> ? Callback<X> : never>>, options?: Partial<Record<K, EmitterOptions>>): CleanupFn;
+    on<K extends StringKey<RequiredAll<T>>>(event: K, callback: NonNullable<T[K]> extends Callback<any> ? T[K] : never, options?: EmitterOptions): CleanupFn;
+    match<L>(matcher: Matcher, callback: Callback<L>, options?: EmitterOptions): CleanupFn;
+    emit<K extends StringKey<RequiredAll<T>>>(name: K, value: NonNullable<T[K]> extends Callback<infer X> ? X : unknown): Promise<void>;
+    protected invoke(data: unknown, event: EventMeta): Promise<void>;
+    protected createEvent(name: string): EventMeta;
+    createSnapshot(): {
+        groupId: string | undefined;
+        namespace: string[];
+        creator: object | undefined;
+        context: object;
+        trace: EventTrace | undefined;
+        listeners: {
+            readonly raw: Matcher;
+            readonly options?: EmitterOptions | undefined;
+            readonly callback: Callback<any>;
+        }[];
+        cleanups: CleanupFn[];
+    };
+    loadSnapshot({ listeners, ...snapshot }: ReturnType<typeof this.createSnapshot>): void;
+}
+
+export { type Callback as C, Emitter as E, type InferCallbackValue as I, type MatcherFn as M, type StringKey as S, type Matcher as a, type CleanupFn as b, type EmitterOptions as c, type EventTrace as d, type EventMeta as e, type EmitterInput as f, type EmitterChildInput as g };

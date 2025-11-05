@@ -1,0 +1,108 @@
+import * as R from 'remeda';
+import { FrameworkError } from '../../errors.js';
+
+var __defProp = Object.defineProperty;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
+function assignFactory(target) {
+  return (source) => {
+    Object.assign(target, source);
+  };
+}
+__name(assignFactory, "assignFactory");
+const assign = /* @__PURE__ */ __name((a, b) => assignFactory(a)(b), "assign");
+const omitEmptyValues = R.pickBy(R.isTruthy);
+const omitUndefined = R.pickBy(R.isDefined);
+function hasProp(target, key) {
+  return Boolean(target) && Object.prototype.hasOwnProperty.call(target, key);
+}
+__name(hasProp, "hasProp");
+function hasProps(keys) {
+  return (target) => keys.every((key) => hasProp(target, key));
+}
+__name(hasProps, "hasProps");
+function setProp(target, paths, value) {
+  for (const entry of paths.entries()) {
+    const [idx, key] = entry;
+    if (!R.isPlainObject(target) && !R.isArray(target)) {
+      throw new TypeError("Only plain objects and arrays are supported!");
+    }
+    const isLast = idx === paths.length - 1;
+    const newValue = isLast ? value : target[key] ?? {};
+    Object.assign(target, {
+      [key]: newValue
+    });
+    target = target[key];
+  }
+}
+__name(setProp, "setProp");
+function getPropStrict(target, path) {
+  if (!target || !(path in target)) {
+    throw new TypeError(`Target does not contain key "${path}"`);
+  }
+  return target[path];
+}
+__name(getPropStrict, "getPropStrict");
+function getProp(target, paths, defaultValue = void 0) {
+  let value = target;
+  if (!value) {
+    return void 0;
+  }
+  for (const key of paths) {
+    if (!hasProp(value, key)) {
+      return defaultValue;
+    }
+    value = value[key];
+  }
+  return value;
+}
+__name(getProp, "getProp");
+function deleteProps(target, keys) {
+  keys.forEach((key) => {
+    delete target[key];
+  });
+}
+__name(deleteProps, "deleteProps");
+function updateObject(old, update) {
+  for (const [key, val] of Object.entries(update)) {
+    const existing = old[key];
+    if (existing !== void 0 && existing !== null) {
+      throw new FrameworkError(`Cannot update object. Key '${key}' already exists and is defined.`, [], {
+        context: {
+          existing,
+          update: val
+        }
+      });
+    }
+    old[key] = val;
+  }
+}
+__name(updateObject, "updateObject");
+function customMerge(results, processors) {
+  if (results.length === 0) {
+    throw new TypeError("Cannot merge content of an empty array!");
+  }
+  const finalResult = {};
+  for (const next of results) {
+    for (const [key, value] of R.entries(next)) {
+      const oldValue = finalResult[key];
+      finalResult[key] = (processors[key] ?? R.takeFirstBy(1))(value, oldValue);
+    }
+  }
+  return finalResult;
+}
+__name(customMerge, "customMerge");
+function mapObj(obj) {
+  return function(fn) {
+    const updated = {};
+    for (const pair of Object.entries(obj)) {
+      const [key, value] = pair;
+      updated[key] = fn(key, value);
+    }
+    return updated;
+  };
+}
+__name(mapObj, "mapObj");
+
+export { assign, assignFactory, customMerge, deleteProps, getProp, getPropStrict, hasProp, hasProps, mapObj, omitEmptyValues, omitUndefined, setProp, updateObject };
+//# sourceMappingURL=object.js.map
+//# sourceMappingURL=object.js.map

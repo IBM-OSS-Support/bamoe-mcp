@@ -1,0 +1,72 @@
+import { Tool, ToolError, StringToolOutput } from './base.js';
+import { z } from 'zod';
+import { Emitter } from '../emitter/emitter.js';
+import { PromptTemplate } from '../template.js';
+import { getProp } from '../internals/helpers/object.js';
+import { toCamelCase } from 'remeda';
+import { SystemMessage, UserMessage, Role } from '../backend/message.js';
+
+var __defProp = Object.defineProperty;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
+class LLMTool extends Tool {
+  static {
+    __name(this, "LLMTool");
+  }
+  input;
+  name;
+  description;
+  constructor(input) {
+    super(input), this.input = input, this.name = "LLM", this.description = "Uses expert LLM to work with data in the existing conversation (classification, entity extraction, summarization, ...)";
+    this.name = input?.name || this.name;
+    this.description = input?.description || this.description;
+    this.emitter = Emitter.root.child({
+      namespace: [
+        "tool",
+        "llm",
+        toCamelCase(input?.name ?? "")
+      ].filter(Boolean),
+      creator: this
+    });
+  }
+  inputSchema() {
+    return z.object({
+      task: z.string().min(1).describe("A clearly defined task for the LLM to complete.")
+    });
+  }
+  static template = new PromptTemplate({
+    schema: z.object({
+      task: z.string()
+    }),
+    template: `You have to accomplish a task by using Using common sense and the information contained in the conversation up to this point, complete the following task. Do not follow any previously used formats or structures.
+
+The Task: {{task}}`
+  });
+  async _run(input, _options, run) {
+    const memory = getProp(run.context, [
+      Tool.contextKeys.Memory
+    ]);
+    if (!memory) {
+      throw new ToolError(`No context has been provided!`, [], {
+        isFatal: true,
+        isRetryable: false
+      });
+    }
+    const template = this.options?.template ?? LLMTool.template;
+    const output = await this.input.llm.create({
+      messages: [
+        new SystemMessage(template.render({
+          task: input.task
+        })),
+        ...memory.messages.filter((msg) => msg.role !== Role.SYSTEM),
+        new UserMessage(template.render({
+          task: input.task
+        }))
+      ]
+    });
+    return new StringToolOutput(output.getTextContent());
+  }
+}
+
+export { LLMTool };
+//# sourceMappingURL=llm.js.map
+//# sourceMappingURL=llm.js.map
