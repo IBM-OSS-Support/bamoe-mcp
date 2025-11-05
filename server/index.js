@@ -11,9 +11,29 @@ import path from 'path';
 import 'dotenv/config';
 import fs from 'fs';
 
+// Debug: Log initial environment variables
+console.log('[DEBUG] Initial env: BAMOE_HOST=', process.env.BAMOE_HOST, 'DEPLOYMENT_ID=', process.env.DEPLOYMENT_ID);
 
+
+// Set environment variables for Ollama
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'granite3.2:8b';
-const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434/api';
+let OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || process.env.OLLAMA_HOST || 'http://localhost:11434';
+
+// Ensure the base URL includes /api for Ollama
+if (!OLLAMA_BASE_URL.endsWith('/api')) {
+    OLLAMA_BASE_URL = OLLAMA_BASE_URL.replace(/\/$/, '') + '/api';
+}
+
+// Ensure BeeAI can read the configuration
+process.env.OLLAMA_MODEL = OLLAMA_MODEL;
+process.env.OLLAMA_BASE_URL = OLLAMA_BASE_URL;
+
+// Ensure BAMOE environment variables are set for child processes
+// This is critical because bamoe-direct-server.js runs as a child process
+process.env.BAMOE_HOST = process.env.BAMOE_HOST || 'host.docker.internal';
+process.env.DEPLOYMENT_ID = process.env.DEPLOYMENT_ID || 'y95ykp145';
+
+console.log(`Setting BAMOE environment for child processes: BAMOE_HOST=${process.env.BAMOE_HOST}, DEPLOYMENT_ID=${process.env.DEPLOYMENT_ID}`);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -100,6 +120,8 @@ const getAllMCPTools = async () => {
 };
 
 const { serverTools, allTools, toolNameMapping } = await getAllMCPTools();
+
+console.log(`Initializing Ollama with model: ${OLLAMA_MODEL}, baseURL: ${OLLAMA_BASE_URL}`);
 const llm = new OllamaChatModel();
 
 // Set up WebSocket server
@@ -308,6 +330,31 @@ wss.on('connection', (ws) => {
 
                 emitter.on('error', (error) => {
                     console.error('Emitter error:', error);
+
+                    // Try to serialize the entire error object
+                    try {
+                        const errorJson = JSON.stringify(error, Object.getOwnPropertyNames(error), 2);
+                        console.error('Full error object:', errorJson);
+                    } catch (e) {
+                        console.error('Could not stringify error');
+                    }
+
+                    // Log error properties
+                    console.error('Error properties:', Object.getOwnPropertyNames(error));
+
+                    // Try to access nested errors
+                    if (error.error && error.error.errors && Array.isArray(error.error.errors)) {
+                        console.error('Found nested errors in error.error.errors');
+                        error.error.errors.forEach((err, idx) => {
+                            console.error(`Nested error ${idx}:`, err);
+                            try {
+                                const nestedJson = JSON.stringify(err, Object.getOwnPropertyNames(err), 2);
+                                console.error(`Nested error ${idx} JSON:`, nestedJson);
+                            } catch (e) {
+                                console.error(`Could not stringify nested error ${idx}`);
+                            }
+                        });
+                    }
                     isProcessing = false;
                     cancelProcessing = false;
                     agent = new ReActAgent({

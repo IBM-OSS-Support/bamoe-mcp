@@ -1,21 +1,5 @@
 {
     "mcpServers": {
-        "postgres": {
-            "command": "npx",
-            "args": [
-                "-y",
-                "@modelcontextprotocol/server-postgres",
-                "postgresql://neehar:postgres@localhost/postgres"
-            ]
-        },
-        "redis": {
-            "command": "npx",
-            "args": [
-                "-y",
-                "@modelcontextprotocol/server-redis",
-                "redis://localhost:6379"
-            ]
-        },
         "bamoe": {
             "command": "node",
             "args": ["bamoe-direct-server.js"]

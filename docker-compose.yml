@@ -1,0 +1,41 @@
+services:
+  # BAMOE MCP Server
+  bamoe-mcp-server:
+    image: quay.io/yamer/mcp-server:latest
+    platform: linux/amd64
+    container_name: bamoe-mcp-server
+    ports:
+      - "18080:8080"
+    environment:
+      - MCP_SERVER_OPENAPI_URLS=http://host.docker.internal/dev-deployment-${DEPLOYMENT_ID:-y95ykp145}/docs/openapi.json
+    networks:
+      - bamoe-network
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+
+  # Web Application
+  web-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bamoe-web-app
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - PORT=${PORT:-3000}
+      - DEPLOYMENT_ID=${DEPLOYMENT_ID:-y95ykp145}
+      - BAMOE_HOST=host.docker.internal
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-granite3.2:8b}
+      - OLLAMA_BASE_URL=${OLLAMA_HOST:-http://host.docker.internal:11434}
+    depends_on:
+      - bamoe-mcp-server
+    networks:
+      - bamoe-network
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  bamoe-network:
+    driver: bridge
