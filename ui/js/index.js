@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const userInput = document.getElementById('user-input');
     const sendButton = document.getElementById('send-button');
     const stopButton = document.getElementById('stop-button');
-    const serverSelect = document.getElementById('server-select');
+    const deploymentSelect = document.getElementById('deployment-select');
     const toolSelect = document.getElementById('tool-select');
     const loading = document.getElementById('loading');
     const toggleTheme = document.getElementById('toggle-theme');
@@ -19,12 +19,103 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastUserMessage = null;
     let editingMessage = null;
     let allTools = [];
+    let currentDeploymentId = null;
 
     // Initialize dropdowns
-    serverSelect.value = 'none';
-    toolSelect.value = 'none';
-    toolSelect.disabled = true;
+    toolSelect.value = 'all';
+    toolSelect.disabled = false;
     sendButton.disabled = true;
+
+    // Fetch deployments from backend
+    async function fetchDeployments() {
+        try {
+            const response = await fetch('/api/deployments');
+            const data = await response.json();
+
+            if (data.success && data.deployments.length > 0) {
+                // Add "None" as the default option
+                deploymentSelect.innerHTML = '<option value="">None</option>';
+
+                data.deployments.forEach((deployment) => {
+                    const option = document.createElement('option');
+                    option.value = deployment.deploymentId;
+                    option.textContent = deployment.workspaceName;
+                    option.dataset.workspaceId = deployment.workspaceId;
+                    deploymentSelect.appendChild(option);
+                });
+
+                // Set "None" as the default selected value
+                deploymentSelect.value = '';
+                currentDeploymentId = null;
+
+                appendMessage('Please select a deployment from the dropdown to get started.', 'bot');
+            } else {
+                deploymentSelect.innerHTML = '<option value="">No deployments found</option>';
+                appendMessage('No deployments found. Please check your Kubernetes configuration.', 'error');
+            }
+        } catch (error) {
+            console.error('Error fetching deployments:', error);
+            deploymentSelect.innerHTML = '<option value="">Error loading deployments</option>';
+            appendMessage('Failed to load deployments: ' + error.message, 'error');
+        }
+    }
+
+    // Function to switch deployment
+    async function switchDeployment(newDeploymentId, showMessage = true) {
+        // If user selected "None" or same deployment, do nothing
+        if (!newDeploymentId || newDeploymentId === currentDeploymentId) {
+            return;
+        }
+
+        try {
+            deploymentSelect.disabled = true;
+            if (showMessage) {
+                appendMessage(`Deploying MCP server for: ${deploymentSelect.options[deploymentSelect.selectedIndex].text}...`, 'bot');
+            }
+
+            const response = await fetch('/api/switch-deployment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ deploymentId: newDeploymentId }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                currentDeploymentId = newDeploymentId;
+                appendMessage('Deployment deployed successfully. Loading tools...', 'bot');
+
+                // Reconnect WebSocket after a short delay
+                setTimeout(() => {
+                    if (ws) {
+                        ws.close();
+                    }
+                    connectWebSocket();
+                }, 2000);
+            } else {
+                appendMessage('Failed to deploy MCP server: ' + data.error, 'error');
+                deploymentSelect.value = currentDeploymentId || '';
+            }
+        } catch (error) {
+            console.error('Error switching deployment:', error);
+            appendMessage('Failed to deploy MCP server: ' + error.message, 'error');
+            deploymentSelect.value = currentDeploymentId || '';
+        } finally {
+            deploymentSelect.disabled = false;
+        }
+    }
+
+    // Handle deployment selection change
+    deploymentSelect.addEventListener('change', async () => {
+        const newDeploymentId = deploymentSelect.value;
+
+        // Only trigger deployment if user selected an actual deployment (not "None")
+        if (newDeploymentId && newDeploymentId !== currentDeploymentId) {
+            await switchDeployment(newDeploymentId, true);
+        }
+    });
 
     // Theme toggle
     toggleTheme.addEventListener('click', () => {
@@ -103,32 +194,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Received WebSocket data:', data);
 
                 if (data.event === 'server_tool_list') {
-                    populateServerSelect(data.servers);
                     allTools = Object.values(data.servers).flatMap((server) => server.tools);
+                    // Populate tools dropdown with all available tools
+                    toolSelect.innerHTML = '<option value="none">None</option><option value="all">All Tools</option>';
+                    allTools.forEach((tool) => {
+                        const option = document.createElement('option');
+                        option.value = tool;
+                        option.textContent = tool;
+                        toolSelect.appendChild(option);
+                    });
+                    toolSelect.value = 'all';
                     return;
                 }
 
-                if (data.event === 'tools_for_server') {
-                    toolSelect.classList.remove('loading');
-                    isToolsLoading = false;
-                    updateSendButtonState();
-                    toolSelect.innerHTML = '<option value="none">None</option><option value="all">All Tools</option>';
-                    if (data.tools && data.tools.length > 0) {
-                        data.tools.forEach((tool) => {
-                            const option = document.createElement('option');
-                            option.value = tool;
-                            option.textContent = tool;
-                            toolSelect.appendChild(option);
-                        });
-                        toolSelect.value = 'all';
-                        toolSelect.disabled = false;
-                    } else {
-                        toolSelect.disabled = false;
-                        toolSelect.value = 'all';
-                        if (data.error) {
-                            appendMessage(data.error, 'error');
+                if (data.event === 'deployment_switched') {
+                    appendMessage(`Deployment switched to: ${data.deploymentId}`, 'bot');
+                    // Reload tools after deployment switch
+                    setTimeout(() => {
+                        if (ws.readyState === WebSocket.OPEN) {
+                            // Tools will be automatically reloaded by server
                         }
-                    }
+                    }, 1000);
                     return;
                 }
 
@@ -212,53 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     connectWebSocket();
-
-    // Populate server dropdown
-    function populateServerSelect(servers) {
-        serverSelect.innerHTML = '<option value="none">None</option><option value="all">All Servers</option>';
-        Object.values(servers).forEach((server) => {
-            const option = document.createElement('option');
-            option.value = server.name;
-            option.textContent = server.name;
-            serverSelect.appendChild(option);
-        });
-        serverSelect.value = 'none';
-        toolSelect.disabled = true;
-        updateSendButtonState();
-    }
-
-    // Handle server selection
-    serverSelect.addEventListener('change', () => {
-        const serverName = serverSelect.value;
-        toolSelect.innerHTML = '<option value="none">None</option><option value="all">All Tools</option>';
-        toolSelect.value = serverName === 'none' ? 'none' : 'all';
-        toolSelect.disabled = serverName === 'none';
-        isToolsLoading = serverName !== 'none' && serverName !== 'all';
-        updateSendButtonState();
-        if (serverName === 'all') {
-            toolSelect.innerHTML = '<option value="none">None</option><option value="all">All Tools</option>';
-            allTools.forEach((tool) => {
-                const option = document.createElement('option');
-                option.value = tool;
-                option.textContent = tool;
-                toolSelect.appendChild(option);
-            });
-            toolSelect.value = 'all';
-            toolSelect.disabled = false;
-            isToolsLoading = false;
-            updateSendButtonState();
-        } else if (serverName && serverName !== 'none') {
-            toolSelect.classList.add('loading');
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ action: 'get_tools', serverName }));
-            } else {
-                toolSelect.classList.remove('loading');
-                isToolsLoading = false;
-                updateSendButtonState();
-                appendMessage('WebSocket not connected. Please try again.', 'error');
-            }
-        }
-    });
+    fetchDeployments();
 
     // Update send button state
     function updateSendButtonState() {
@@ -297,8 +337,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function toggleInputState(disable) {
         userInput.disabled = disable;
-        serverSelect.disabled = disable;
-        toolSelect.disabled = disable || serverSelect.value === 'none';
+        deploymentSelect.disabled = disable;
+        toolSelect.disabled = disable;
         stopButton.style.display = disable ? 'block' : 'none';
         updateSendButtonState();
     }
@@ -327,9 +367,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const serverName = serverSelect.value;
-        if (!serverName) {
-            appendMessage('Please select a server or None', 'error');
+        if (!currentDeploymentId) {
+            appendMessage('Please select a deployment', 'error');
             return;
         }
 
@@ -348,8 +387,9 @@ document.addEventListener('DOMContentLoaded', () => {
         loading.style.display = 'block';
 
         try {
-            const toolName = toolSelect.value || 'none';
-            console.log('Sending message with server:', serverName, 'tool:', toolName);
+            const toolName = toolSelect.value || 'all';
+            const serverName = 'all'; // Always use all tools from BAMOE
+            console.log('Sending message with deployment:', currentDeploymentId, 'tool:', toolName);
             ws.send(JSON.stringify({ query, toolName, serverName }));
         } catch (error) {
             console.error('Error sending WebSocket message:', error);
