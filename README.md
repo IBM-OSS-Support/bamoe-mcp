@@ -1,5 +1,46 @@
 # BAMOE MCP Web Server
 
+## For Distributors (Building and Pushing Images)
+
+### Prerequisites
+- Docker installed
+- Access to quay.io container registry
+- Credentials for the `pamoe` namespace on quay.io
+
+### Build and Push the Image
+
+Simply run the build script:
+
+```bash
+./build-and-push.sh
+```
+
+The script will:
+1. Build the Docker image
+2. Tag it as `quay.io/pamoe/bamoe-mcp-web-app:latest`
+3. Prompt you to login to quay.io (use credentials: username `athirakm`)
+4. Push the image to the registry
+
+**Manual Steps (if preferred):**
+
+```bash
+# Build the image
+docker build -t bamoe-mcp-web-app .
+
+# Login to quay.io
+docker login quay.io
+# Username: athirakm
+# Password: [your password]
+
+# Tag the image
+docker tag bamoe-mcp-web-app quay.io/pamoe/bamoe-mcp-web-app:latest
+
+# Push to registry
+docker push quay.io/pamoe/bamoe-mcp-web-app:latest
+```
+
+---
+
 A web server application to access and interact with BAMOE MCP (Model Context Protocol) using a React-based UI with AI agent capabilities.
 
 ## Features
@@ -22,20 +63,25 @@ A web server application to access and interact with BAMOE MCP (Model Context Pr
 
 ### 1. Prerequisites Setup
 
-Before starting, you need to configure your kubeconfig for Docker compatibility:
+Before starting, you need to create a Docker-specific kubeconfig (this keeps your original config untouched):
 
 ```bash
-# Backup your kubeconfig
-cp ~/.kube/config ~/.kube/config.backup
+# Create a Docker-specific kubeconfig
+cp ~/.kube/config ~/.kube/config.docker
 
-# Find your cluster's server address
+# Find your cluster's server address(es)
 kubectl config view | grep server:
 
-# Replace 127.0.0.1 with host.docker.internal (replace PORT with your actual port)
-sed -i.bak 's|https://127.0.0.1:PORT|https://host.docker.internal:PORT|g' ~/.kube/config
+# Replace 127.0.0.1 with host.docker.internal for each cluster
+# On macOS:
+sed -i '' -e 's|https://127.0.0.1:PORT|https://host.docker.internal:PORT|g' ~/.kube/config.docker
 
+# On Linux:
+sed -i 's|https://127.0.0.1:PORT|https://host.docker.internal:PORT|g' ~/.kube/config.docker
+
+# If you have multiple clusters, replace PORT with each actual port number
 # Verify the change
-grep "server:" ~/.kube/config
+grep "server:" ~/.kube/config.docker
 ```
 
 See the [Kubernetes Configuration](#kubernetes-configuration-for-docker) section for detailed instructions.
@@ -120,41 +166,59 @@ For the dynamic deployment feature to work from within Docker containers, you ne
 
 If you're using **kind** (Kubernetes in Docker) or **Docker Desktop Kubernetes**, the cluster API server is typically bound to `127.0.0.1` (localhost). However, from within a Docker container, `127.0.0.1` refers to the container itself, not the host machine.
 
-**Solution:** Update your kubeconfig to use `host.docker.internal` instead of `127.0.0.1`.
+**Solution:** Create a Docker-specific kubeconfig that uses `host.docker.internal` instead of `127.0.0.1`. This approach keeps your original kubeconfig unchanged.
 
-##### Step 1: Backup your kubeconfig
+##### Step 1: Create Docker-specific kubeconfig
 
 ```bash
-cp ~/.kube/config ~/.kube/config.backup
+cp ~/.kube/config ~/.kube/config.docker
 ```
 
 ##### Step 2: Update the server address
 
-Replace `127.0.0.1` with `host.docker.internal` in your kubeconfig:
+Replace `127.0.0.1` with `host.docker.internal` in the Docker-specific config:
 
-```bash
-# For kind cluster (example port: 49558)
-sed -i.bak 's|https://127.0.0.1:49558|https://host.docker.internal:49558|g' ~/.kube/config
-
-# For Docker Desktop cluster (example port: 64226)
-sed -i.bak 's|https://127.0.0.1:64226|https://host.docker.internal:64226|g' ~/.kube/config
-```
-
-**Find your cluster port:**
+**Find your cluster port(s):**
 ```bash
 kubectl config view | grep server:
+```
+
+**On macOS:**
+```bash
+# For kind cluster (example port: 49558)
+sed -i '' 's|https://127.0.0.1:49558|https://host.docker.internal:49558|g' ~/.kube/config.docker
+
+# For Docker Desktop cluster (example port: 64226)
+sed -i '' 's|https://127.0.0.1:64226|https://host.docker.internal:64226|g' ~/.kube/config.docker
+
+# If you have multiple clusters, you can update them all at once:
+sed -i '' -e 's|https://127.0.0.1:49558|https://host.docker.internal:49558|g' -e 's|https://127.0.0.1:64226|https://host.docker.internal:64226|g' ~/.kube/config.docker
+```
+
+**On Linux:**
+```bash
+# For kind cluster (example port: 49558)
+sed -i 's|https://127.0.0.1:49558|https://host.docker.internal:49558|g' ~/.kube/config.docker
+
+# For Docker Desktop cluster (example port: 64226)
+sed -i 's|https://127.0.0.1:64226|https://host.docker.internal:64226|g' ~/.kube/config.docker
+
+# If you have multiple clusters, you can update them all at once:
+sed -i -e 's|https://127.0.0.1:49558|https://host.docker.internal:49558|g' -e 's|https://127.0.0.1:64226|https://host.docker.internal:64226|g' ~/.kube/config.docker
 ```
 
 ##### Step 3: Verify the change
 
 ```bash
-grep "server:" ~/.kube/config
+grep "server:" ~/.kube/config.docker
 ```
 
 You should see something like:
 ```
 server: https://host.docker.internal:49558
 ```
+
+**Note:** Your original `~/.kube/config` remains untouched and will continue to work normally with kubectl on your host machine.
 
 #### TLS Certificate Handling
 
@@ -165,6 +229,13 @@ The application automatically handles this by using the `--insecure-skip-tls-ver
 **Note:** For production deployments or remote clusters, consider using proper certificate management or service account tokens instead.
 
 #### Verify Kubernetes Connectivity
+
+Test the Docker-specific kubeconfig before starting the application:
+
+```bash
+# Test the Docker config from your host
+kubectl --kubeconfig ~/.kube/config.docker get services -n local-kie-sandbox-dev-deployments --insecure-skip-tls-verify
+```
 
 After starting the application, verify that it can connect to your Kubernetes cluster:
 
@@ -346,7 +417,11 @@ git clone <repository-url>
 cd bamoe-mcp
 ```
 
-2. Configure kubeconfig (see [Kubernetes Configuration](#kubernetes-configuration-for-docker))
+2. Create Docker-specific kubeconfig (see [Kubernetes Configuration](#kubernetes-configuration-for-docker)):
+```bash
+cp ~/.kube/config ~/.kube/config.docker
+# Follow the sed commands to update server addresses
+```
 
 3. Create environment configuration (optional):
 ```bash
@@ -410,7 +485,11 @@ web-app:
 
 **User Deployment Steps:**
 
-1. Configure kubeconfig for Docker (see [Kubernetes Configuration](#kubernetes-configuration-for-docker))
+1. Create Docker-specific kubeconfig (see [Kubernetes Configuration](#kubernetes-configuration-for-docker)):
+```bash
+cp ~/.kube/config ~/.kube/config.docker
+# Follow the sed commands to update server addresses
+```
 
 2. (Optional) Create `.env` file for customization:
 ```bash
@@ -583,9 +662,9 @@ If not running, select a deployment in the UI to trigger deployment.
 kubectl get services -n local-kie-sandbox-dev-deployments
 ```
 
-2. Check if the kubeconfig is correctly configured:
+2. Check if the Docker-specific kubeconfig is correctly configured:
 ```bash
-grep "server:" ~/.kube/config
+grep "server:" ~/.kube/config.docker
 # Should show: server: https://host.docker.internal:<PORT>
 ```
 
