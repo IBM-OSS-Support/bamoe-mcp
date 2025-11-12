@@ -282,12 +282,14 @@ body {
     gap: 12px;
     background: #ffffff;
     align-items: center;
+    flex-wrap: nowrap;
 }
 
 .input-group {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    flex-shrink: 0;
 }
 
 .input-group label {
@@ -297,7 +299,8 @@ body {
 }
 
 #server-select,
-#tool-select {
+#tool-select,
+#deployment-select {
     padding: 12px;
     border: 1px solid #d1d5db;
     border-radius: 8px;
@@ -307,20 +310,27 @@ body {
     background: #fff;
     cursor: pointer;
     min-width: 150px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 #server-select:focus,
-#tool-select:focus {
+#tool-select:focus,
+#deployment-select:focus {
     border-color: #1e88e5;
 }
 
 #server-select:disabled,
-#tool-select:disabled {
+#tool-select:disabled,
+#deployment-select:disabled {
     background: #e0e0e0;
     cursor: not-allowed;
 }
 
-#tool-select.loading {
+#tool-select.loading,
+#deployment-select.loading {
     background: #f0f0f0;
     cursor: progress;
 }
@@ -590,18 +600,21 @@ body.dark .input-group label {
 }
 
 body.dark #server-select,
-body.dark #tool-select {
+body.dark #tool-select,
+body.dark #deployment-select {
     background: #1a202c;
     border-color: #4a5568;
     color: #e2e8f0;
 }
 
 body.dark #server-select:disabled,
-body.dark #tool-select:disabled {
+body.dark #tool-select:disabled,
+body.dark #deployment-select:disabled {
     background: #4a5568;
 }
 
-body.dark #tool-select.loading {
+body.dark #tool-select.loading,
+body.dark #deployment-select.loading {
     background: #4a5568;
 }
 
@@ -713,7 +726,8 @@ body.dark .thinking-content strong {
     }
 
     #server-select,
-    #tool-select {
+    #tool-select,
+    #deployment-select {
         width: 100%;
         margin-bottom: 12px;
     }

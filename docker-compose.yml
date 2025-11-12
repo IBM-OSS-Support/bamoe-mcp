@@ -1,18 +1,20 @@
 services:
   # BAMOE MCP Server
-  bamoe-mcp-server:
-    image: quay.io/yamer/mcp-server:latest
-    platform: linux/amd64
-    container_name: bamoe-mcp-server
-    ports:
-      - "18080:8080"
-    environment:
-      - MCP_SERVER_OPENAPI_URLS=http://host.docker.internal/dev-deployment-${DEPLOYMENT_ID:-y95ykp145}/docs/openapi.json
-    networks:
-      - bamoe-network
-    restart: unless-stopped
-    stdin_open: true
-    tty: true
+  # NOTE: MCP server is now deployed dynamically when a deployment is selected in the UI
+  # The container will be created using 'docker run' with the selected deployment ID
+  # bamoe-mcp-server:
+  #   image: quay.io/yamer/mcp-server:latest
+  #   platform: linux/amd64
+  #   container_name: bamoe-mcp-server
+  #   ports:
+  #     - "18080:8080"
+  #   environment:
+  #     - MCP_SERVER_OPENAPI_URLS=http://host.docker.internal/dev-deployment-${DEPLOYMENT_ID:-y95ykp145}/docs/openapi.json
+  #   networks:
+  #     - bamoe-network
+  #   restart: unless-stopped
+  #   stdin_open: true
+  #   tty: true
 
   # Web Application
   web-app:
@@ -24,12 +26,14 @@ services:
       - "${PORT:-3000}:3000"
     environment:
       - PORT=${PORT:-3000}
-      - DEPLOYMENT_ID=${DEPLOYMENT_ID:-y95ykp145}
       - BAMOE_HOST=host.docker.internal
       - OLLAMA_MODEL=${OLLAMA_MODEL:-granite3.2:8b}
       - OLLAMA_BASE_URL=${OLLAMA_HOST:-http://host.docker.internal:11434}
-    depends_on:
-      - bamoe-mcp-server
+      - K8S_NAMESPACE=${K8S_NAMESPACE:-local-kie-sandbox-dev-deployments}
+      - IS_DOCKER=true
+    volumes:
+      - ${HOME}/.kube/config:/root/.kube/config:ro
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - bamoe-network
     restart: unless-stopped

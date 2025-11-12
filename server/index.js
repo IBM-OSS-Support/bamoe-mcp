@@ -6,14 +6,14 @@ import { ReActAgent } from 'beeai-framework/agents/react/agent';
 import { MCPTool } from 'beeai-framework/tools/mcp';
 import { WebSocketServer } from 'ws';
 import { fileURLToPath } from 'url';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import express from 'express';
 import path from 'path';
 import 'dotenv/config';
 import fs from 'fs';
 
-// Debug: Log initial environment variables
-console.log('[DEBUG] Initial env: BAMOE_HOST=', process.env.BAMOE_HOST, 'DEPLOYMENT_ID=', process.env.DEPLOYMENT_ID);
-
+const execAsync = promisify(exec);
 
 // Set environment variables for Ollama
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'granite3.2:8b';
@@ -31,9 +31,9 @@ process.env.OLLAMA_BASE_URL = OLLAMA_BASE_URL;
 // Ensure BAMOE environment variables are set for child processes
 // This is critical because bamoe-direct-server.js runs as a child process
 process.env.BAMOE_HOST = process.env.BAMOE_HOST || 'host.docker.internal';
-process.env.DEPLOYMENT_ID = process.env.DEPLOYMENT_ID || 'y95ykp145';
+// Note: DEPLOYMENT_ID should NOT be set here - it will be set when user selects a deployment
 
-console.log(`Setting BAMOE environment for child processes: BAMOE_HOST=${process.env.BAMOE_HOST}, DEPLOYMENT_ID=${process.env.DEPLOYMENT_ID}`);
+console.log(`Setting BAMOE environment for child processes: BAMOE_HOST=${process.env.BAMOE_HOST}`);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,7 +41,140 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = process.env.PORT || 3000;
 
+app.use(express.json());
 app.use(express.static(path.join(__dirname, '../ui')));
+
+// API endpoint to fetch deployments from Kubernetes
+app.get('/api/deployments', async (req, res) => {
+    const namespace = process.env.K8S_NAMESPACE || 'local-kie-sandbox-dev-deployments';
+
+    try {
+        // Check if kubectl is available
+        await execAsync('kubectl version --client');
+
+        // Get all services in the namespace
+        // Note: Using --insecure-skip-tls-verify for Docker compatibility with host.docker.internal
+        const isDocker = process.env.IS_DOCKER === 'true' || fs.existsSync('/.dockerenv');
+        const tlsFlag = isDocker ? '--insecure-skip-tls-verify' : '';
+        const { stdout } = await execAsync(`kubectl get services -n ${namespace} -o json ${tlsFlag}`);
+        const servicesData = JSON.parse(stdout);
+
+        const deployments = [];
+
+        for (const service of servicesData.items) {
+            const serviceName = service.metadata.name;
+
+            // Extract deployment ID from service name (format: dev-deployment-<ID>)
+            const match = serviceName.match(/dev-deployment-(.+)/);
+            if (match) {
+                const deploymentId = match[1];
+                const workspaceName = service.metadata.annotations?.['tools.kie.org/workspace-name'] || '(unknown)';
+                const workspaceId = service.metadata.annotations?.['tools.kie.org/workspace-id'] || '';
+
+                deployments.push({
+                    workspaceName,
+                    deploymentId,
+                    workspaceId
+                });
+            }
+        }
+
+        res.json({ success: true, deployments });
+    } catch (error) {
+        console.error('Error fetching deployments:', error.message);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            message: 'Failed to fetch deployments. Make sure kubectl is installed and configured.'
+        });
+    }
+});
+
+// API endpoint to switch deployment
+app.post('/api/switch-deployment', async (req, res) => {
+    const { deploymentId } = req.body;
+
+    if (!deploymentId) {
+        return res.status(400).json({ success: false, error: 'deploymentId is required' });
+    }
+
+    try {
+        console.log(`Switching to deployment: ${deploymentId}`);
+
+        // Update environment variable
+        process.env.DEPLOYMENT_ID = deploymentId;
+
+        // If running in Docker, dynamically deploy the MCP server
+        const isDocker = process.env.IS_DOCKER === 'true' || fs.existsSync('/.dockerenv');
+
+        if (isDocker) {
+            try {
+                // Stop and remove any existing MCP server container
+                console.log('Stopping existing bamoe-mcp-server container...');
+                try {
+                    await execAsync('docker stop bamoe-mcp-server');
+                    await execAsync('docker rm bamoe-mcp-server');
+                    console.log('Existing container stopped and removed');
+                } catch (stopError) {
+                    // Container might not exist, which is fine
+                    console.log('No existing container to stop:', stopError.message);
+                }
+
+                // Build the OpenAPI URL for the selected deployment
+                const openApiUrl = `http://host.docker.internal/dev-deployment-${deploymentId}/docs/openapi.json`;
+
+                // Start new MCP server container with docker run
+                console.log(`Starting bamoe-mcp-server with deployment ID: ${deploymentId}`);
+                const dockerRunCmd = `docker run -d \
+                    --name bamoe-mcp-server \
+                    --platform linux/amd64 \
+                    -p 18080:8080 \
+                    --network bamoe-mcp_bamoe-network \
+                    -e MCP_SERVER_OPENAPI_URLS=${openApiUrl} \
+                    --restart unless-stopped \
+                    -it \
+                    quay.io/yamer/mcp-server:latest`;
+
+                await execAsync(dockerRunCmd);
+                console.log('MCP server container started successfully');
+            } catch (dockerError) {
+                console.error('Docker deployment error:', dockerError.message);
+                // Return error to UI
+                return res.status(500).json({
+                    success: false,
+                    error: `Failed to deploy MCP server: ${dockerError.message}`
+                });
+            }
+        }
+
+        // Notify all connected WebSocket clients to reconnect
+        wss.clients.forEach((client) => {
+            if (client.readyState === 1) { // OPEN
+                client.send(JSON.stringify({
+                    event: 'deployment_switched',
+                    deploymentId,
+                    message: 'Deployment switched. Reconnecting...'
+                }));
+            }
+        });
+
+        // Trigger reload of MCP tools
+        setTimeout(async () => {
+            try {
+                const newTools = await getAllMCPTools();
+                Object.assign(globalToolsState, newTools);
+                console.log('MCP tools reloaded for new deployment');
+            } catch (error) {
+                console.error('Error reloading MCP tools:', error.message);
+            }
+        }, 3000); // Wait 3 seconds for container to start
+
+        res.json({ success: true, message: 'Deployment switched successfully', deploymentId });
+    } catch (error) {
+        console.error('Error switching deployment:', error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
 
 // Sanitize tool names to be event-emitter friendly
 function sanitizeToolName(name) {
@@ -67,11 +200,17 @@ const getAllMCPTools = async () => {
             // All servers now use stdio transport
             const command = serverConfig.command;
             const args = serverConfig.args || [];
-            
+
             console.log(`Connecting to ${serverName} MCP server...`);
             await actualClient.connect(new StdioClientTransport({
                 command: command,
-                args: args
+                args: args,
+                env: {
+                    ...process.env,
+                    // Ensure DEPLOYMENT_ID is explicitly passed to child process
+                    DEPLOYMENT_ID: process.env.DEPLOYMENT_ID,
+                    BAMOE_HOST: process.env.BAMOE_HOST
+                }
             }));
             
             console.log(`Connected to MCP server: ${serverName}`);
@@ -119,7 +258,19 @@ const getAllMCPTools = async () => {
     return { serverTools, allTools, toolNameMapping };
 };
 
-const { serverTools, allTools, toolNameMapping } = await getAllMCPTools();
+// Store tools state globally so it can be updated when deployment switches
+// Note: Initial load will be empty until user selects a deployment in the UI
+let globalToolsState = { serverTools: {}, allTools: [], toolNameMapping: {} };
+
+// Try to load MCP tools at startup (may fail if MCP server isn't running yet)
+try {
+    console.log('Attempting to load MCP tools at startup...');
+    globalToolsState = await getAllMCPTools();
+    console.log(`Successfully loaded ${globalToolsState.allTools.length} tools at startup`);
+} catch (error) {
+    console.log('MCP tools not loaded at startup (expected if MCP server not deployed yet)');
+    console.log('Tools will be loaded after user selects a deployment');
+}
 
 console.log(`Initializing Ollama with model: ${OLLAMA_MODEL}, baseURL: ${OLLAMA_BASE_URL}`);
 const llm = new OllamaChatModel();
@@ -127,8 +278,13 @@ const llm = new OllamaChatModel();
 // Set up WebSocket server
 const server = app.listen(port, () => {
     console.log(`\nServer running at http://localhost:${port}`);
-    console.log(`Available MCP servers: ${Object.keys(serverTools).join(', ')}`);
-    console.log(`Total tools loaded: ${allTools.length}\n`);
+    if (Object.keys(globalToolsState.serverTools).length > 0) {
+        console.log(`Available MCP servers: ${Object.keys(globalToolsState.serverTools).join(', ')}`);
+        console.log(`Total tools loaded: ${globalToolsState.allTools.length}`);
+    } else {
+        console.log('No MCP tools loaded yet. Please select a deployment in the UI.');
+    }
+    console.log('');
 });
 
 const wss = new WebSocketServer({ server });
@@ -142,14 +298,14 @@ wss.on('connection', (ws) => {
     let agent = new ReActAgent({
         llm,
         memory,
-        tools: allTools,
+        tools: globalToolsState.allTools,
     });
 
     // Send MCP servers and their tools to client
-    ws.send(JSON.stringify({ 
-        event: 'server_tool_list', 
-        servers: serverTools,
-        toolNameMapping: toolNameMapping
+    ws.send(JSON.stringify({
+        event: 'server_tool_list',
+        servers: globalToolsState.serverTools,
+        toolNameMapping: globalToolsState.toolNameMapping
     }));
 
     // Keep-alive ping
@@ -180,7 +336,7 @@ wss.on('connection', (ws) => {
                     agent = new ReActAgent({
                         llm,
                         memory,
-                        tools: allTools,
+                        tools: globalToolsState.allTools,
                     });
                     ws.send(JSON.stringify({ event: 'stopped', message: 'Processing stopped by user' }));
                 }
@@ -198,7 +354,7 @@ wss.on('connection', (ws) => {
                 agent = new ReActAgent({
                     llm,
                     memory,
-                    tools: allTools,
+                    tools: globalToolsState.allTools,
                 });
                 ws.send(JSON.stringify({ event: 'new_chat', message: 'New chat started' }));
                 return;
@@ -211,18 +367,18 @@ wss.on('connection', (ws) => {
                     return;
                 }
                 if (serverName === 'all') {
-                    const allServerTools = Object.values(serverTools).flatMap((server) => server.tools);
+                    const allServerTools = Object.values(globalToolsState.serverTools).flatMap((server) => server.tools);
                     console.log('Sending all tools for "All Servers":', allServerTools);
                     ws.send(JSON.stringify({ event: 'tools_for_server', tools: allServerTools }));
                     return;
                 }
-                if (!serverName || !serverTools[serverName]) {
+                if (!serverName || !globalToolsState.serverTools[serverName]) {
                     console.log('Invalid server name:', serverName);
                     ws.send(JSON.stringify({ event: 'tools_for_server', tools: [], error: 'Invalid server name' }));
                     return;
                 }
-                console.log('Sending tools for server:', serverName, serverTools[serverName].tools);
-                ws.send(JSON.stringify({ event: 'tools_for_server', tools: serverTools[serverName].tools }));
+                console.log('Sending tools for server:', serverName, globalToolsState.serverTools[serverName].tools);
+                ws.send(JSON.stringify({ event: 'tools_for_server', tools: globalToolsState.serverTools[serverName].tools }));
                 return;
             }
 
@@ -255,7 +411,7 @@ wss.on('connection', (ws) => {
                 });
             } else if (serverName === 'all') {
                 if (toolName && toolName !== 'none' && toolName !== 'all') {
-                    const selectedTool = allTools.find((tool) => tool.name === toolName);
+                    const selectedTool = globalToolsState.allTools.find((tool) => tool.name === toolName);
                     if (!selectedTool) {
                         ws.send(JSON.stringify({ error: `Tool '${toolName}' not found` }));
                         isProcessing = false;
@@ -270,12 +426,12 @@ wss.on('connection', (ws) => {
                     agent = new ReActAgent({
                         llm,
                         memory,
-                        tools: toolName === 'none' ? [] : allTools,
+                        tools: toolName === 'none' ? [] : globalToolsState.allTools,
                     });
                 }
-            } else if (serverTools[serverName]) {
+            } else if (globalToolsState.serverTools[serverName]) {
                 if (toolName && toolName !== 'none' && toolName !== 'all') {
-                    const selectedTool = allTools.find((tool) => tool.name === toolName && serverTools[serverName].tools.includes(tool.name));
+                    const selectedTool = globalToolsState.allTools.find((tool) => tool.name === toolName && globalToolsState.serverTools[serverName].tools.includes(tool.name));
                     if (!selectedTool) {
                         ws.send(JSON.stringify({ error: `Tool '${toolName}' not found for server '${serverName}'` }));
                         isProcessing = false;
@@ -290,7 +446,7 @@ wss.on('connection', (ws) => {
                     agent = new ReActAgent({
                         llm,
                         memory,
-                        tools: toolName === 'none' ? [] : toolName === 'all' ? allTools : allTools.filter((tool) => serverTools[serverName].tools.includes(tool.name)),
+                        tools: toolName === 'none' ? [] : toolName === 'all' ? globalToolsState.allTools : globalToolsState.allTools.filter((tool) => globalToolsState.serverTools[serverName].tools.includes(tool.name)),
                     });
                 }
             } else {
@@ -360,7 +516,7 @@ wss.on('connection', (ws) => {
                     agent = new ReActAgent({
                         llm,
                         memory,
-                        tools: allTools,
+                        tools: globalToolsState.allTools,
                     });
                     ws.send(JSON.stringify({ error: error.message || 'Error processing query' }));
                     ws.send(JSON.stringify({ event: 'end', message: 'Stream completed' }));
@@ -373,7 +529,7 @@ wss.on('connection', (ws) => {
             agent = new ReActAgent({
                 llm,
                 memory,
-                tools: allTools,
+                tools: globalToolsState.allTools,
             });
             ws.send(JSON.stringify({ error: error.message || 'Internal server error' }));
             ws.send(JSON.stringify({ event: 'end', message: 'Stream completed' }));
