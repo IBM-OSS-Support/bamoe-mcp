@@ -2,7 +2,7 @@ services:
   # BAMOE MCP Web Application
   web-app:
     image: quay.io/pamoe/bamoe-mcp-web-app:latest
-    container_name: bamoe-web-app
+    container_name: bamoe-mcp-web-app
     ports:
       - "${PORT:-3000}:3000"
     environment:
