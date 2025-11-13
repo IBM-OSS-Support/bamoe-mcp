@@ -17,34 +17,8 @@ echo "BAMOE MCP Web App - Build & Push"
 echo "======================================"
 echo ""
 
-# Step 1: Build the Docker image
-echo "Step 1: Building Docker image..."
-docker build -t ${IMAGE_NAME} .
-
-if [ $? -eq 0 ]; then
-    echo "✓ Build successful"
-else
-    echo "✗ Build failed"
-    exit 1
-fi
-
-echo ""
-
-# Step 2: Tag the image
-echo "Step 2: Tagging image as ${FULL_IMAGE_NAME}..."
-docker tag ${IMAGE_NAME} ${FULL_IMAGE_NAME}
-
-if [ $? -eq 0 ]; then
-    echo "✓ Tagged successfully"
-else
-    echo "✗ Tagging failed"
-    exit 1
-fi
-
-echo ""
-
-# Step 3: Login to quay.io (if not already logged in)
-echo "Step 3: Logging in to ${REGISTRY}..."
+# Step 1: Login to quay.io (if not already logged in)
+echo "Step 1: Logging in to ${REGISTRY}..."
 echo "Please enter your credentials:"
 docker login ${REGISTRY}
 
@@ -57,14 +31,15 @@ fi
 
 echo ""
 
-# Step 4: Push the image
-echo "Step 4: Pushing image to ${REGISTRY}..."
-docker push ${FULL_IMAGE_NAME}
+# Step 2: Build multi-platform image and push directly
+echo "Step 2: Building multi-platform image (linux/amd64, linux/arm64) and pushing..."
+echo "This will work on AMD64 (Intel/AMD), ARM64 (Mac M1/M2/M3), and other architectures"
+docker buildx build --platform linux/amd64,linux/arm64 -t ${FULL_IMAGE_NAME} --push .
 
 if [ $? -eq 0 ]; then
-    echo "✓ Push successful"
+    echo "✓ Build and push successful"
 else
-    echo "✗ Push failed"
+    echo "✗ Build and push failed"
     exit 1
 fi
 
@@ -73,5 +48,6 @@ echo "======================================"
 echo "✓ All steps completed successfully!"
 echo "======================================"
 echo ""
-echo "Image available at: ${FULL_IMAGE_NAME}"
+echo "Multi-platform image available at: ${FULL_IMAGE_NAME}"
+echo "Supports: linux/amd64, linux/arm64"
 echo ""
