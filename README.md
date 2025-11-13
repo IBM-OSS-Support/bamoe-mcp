@@ -96,7 +96,7 @@ cp .env.example .env
 
 You can customize settings like:
 - `PORT` (default: 3000)
-- `OLLAMA_MODEL` (default: granite3.2:8b)
+- `OLLAMA_MODEL` (default: granite3.3:8b)
 - `K8S_NAMESPACE` (default: local-kie-sandbox-dev-deployments)
 
 **Note:** You no longer need to set `DEPLOYMENT_ID` - it's now selected dynamically in the UI!
@@ -147,7 +147,7 @@ This application features **dynamic deployment selection** - you no longer need 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `PORT` | Web application port | `3000` |
-| `OLLAMA_MODEL` | Ollama model to use | `granite3.2:8b` |
+| `OLLAMA_MODEL` | Ollama model to use | `granite3.3:8b` |
 | `OLLAMA_HOST` | Ollama API endpoint | `http://host.docker.internal:11434/api` |
 | `BAMOE_HOST` | BAMOE server host | `host.docker.internal` |
 | `K8S_NAMESPACE` | Kubernetes namespace for BAMOE deployments | `local-kie-sandbox-dev-deployments` |
@@ -478,7 +478,7 @@ web-app:
     - PORT=${PORT:-3000}
     - DEPLOYMENT_ID=${DEPLOYMENT_ID:-y95ykp145}
     - BAMOE_HOST=host.docker.internal
-    - OLLAMA_MODEL=${OLLAMA_MODEL:-granite3.2:8b}
+    - OLLAMA_MODEL=${OLLAMA_MODEL:-granite3.3:8b}
     - OLLAMA_BASE_URL=${OLLAMA_HOST:-http://host.docker.internal:11434}
   # ... rest of configuration
 ```
@@ -594,7 +594,7 @@ docker exec bamoe-web-app sh -c 'env | grep OLLAMA'
 Expected output:
 ```
 OLLAMA_BASE_URL=http://host.docker.internal:11434/api
-OLLAMA_MODEL=granite3.2:8b
+OLLAMA_MODEL=granite3.3:8b
 ```
 
 **Important:** The `OLLAMA_BASE_URL` must include `/api` at the end. The application automatically appends this if missing.
@@ -606,7 +606,7 @@ docker-compose logs web-app | grep "Initializing Ollama"
 
 Expected output:
 ```
-Initializing Ollama with model: granite3.2:8b, baseURL: http://host.docker.internal:11434/api
+Initializing Ollama with model: granite3.3:8b, baseURL: http://host.docker.internal:11434/api
 ```
 
 ### BAMOE Connection Issues
@@ -699,7 +699,7 @@ docker exec bamoe-web-app sh -c 'env | grep -E "OLLAMA|BAMOE|K8S"'
 Expected output:
 ```
 OLLAMA_BASE_URL=http://host.docker.internal:11434/api
-OLLAMA_MODEL=granite3.2:8b
+OLLAMA_MODEL=granite3.3:8b
 BAMOE_HOST=host.docker.internal
 K8S_NAMESPACE=local-kie-sandbox-dev-deployments
 ```
@@ -744,7 +744,7 @@ Common agent errors:
 curl -X POST http://localhost:11434/api/chat \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "granite3.2:8b",
+    "model": "granite3.3:8b",
     "messages": [{"role": "user", "content": "test"}],
     "stream": false
   }'
