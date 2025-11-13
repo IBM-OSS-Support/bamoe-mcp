@@ -24,7 +24,7 @@ EXPOSE 3000
 
 # Set default environment variables
 ENV PORT=3000
-ENV OLLAMA_MODEL=granite3.2:8b
+ENV OLLAMA_MODEL=granite3.3:8b
 ENV OLLAMA_BASE_URL=http://host.docker.internal:11434
 ENV BAMOE_HOST=host.docker.internal
 # Note: DEPLOYMENT_ID is set dynamically when user selects a deployment
