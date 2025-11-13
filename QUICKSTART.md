@@ -115,7 +115,7 @@ Copy-Item .env.example .env
 
 # Edit .env to customize (optional):
 # - PORT (default: 3000)
-# - OLLAMA_MODEL (default: granite3.2:8b)
+# - OLLAMA_MODEL (default: granite3.3:8b)
 # - K8S_NAMESPACE (default: local-kie-sandbox-dev-deployments)
 ```
 
@@ -165,7 +165,7 @@ Install from: https://ollama.ai
 
 Start Ollama and pull the required model:
 ```bash
-ollama pull granite3.2:8b
+ollama pull granite3.3:8b
 ```
 
 Verify Ollama is running:
@@ -229,10 +229,10 @@ Invoke-WebRequest -Uri http://localhost:11434/api/tags
 2. Check Ollama has the required model:
 ```bash
 # On macOS/Linux:
-ollama list | grep granite3.2
+ollama list | grep granite3.3
 
 # On Windows (PowerShell):
-ollama list | Select-String granite3.2
+ollama list | Select-String granite3.3
 ```
 
 #### View application logs?
@@ -278,7 +278,7 @@ docker rm $(docker ps -aq --filter "name=bamoe-mcp-server") 2>/dev/null || true
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `PORT` | Web application port | `3000` |
-| `OLLAMA_MODEL` | Ollama model to use | `granite3.2:8b` |
+| `OLLAMA_MODEL` | Ollama model to use | `granite3.3:8b` |
 | `OLLAMA_HOST` | Ollama API endpoint | `http://host.docker.internal:11434` |
 | `BAMOE_HOST` | BAMOE server host | `host.docker.internal` |
 | `K8S_NAMESPACE` | Kubernetes namespace for BAMOE deployments | `local-kie-sandbox-dev-deployments` |
