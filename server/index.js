@@ -16,7 +16,7 @@ import fs from 'fs';
 const execAsync = promisify(exec);
 
 // Set environment variables for Ollama
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'granite3.2:8b';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'granite3.3:8b';
 let OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || process.env.OLLAMA_HOST || 'http://localhost:11434';
 
 // Ensure the base URL includes /api for Ollama
@@ -25,8 +25,10 @@ if (!OLLAMA_BASE_URL.endsWith('/api')) {
 }
 
 // Ensure BeeAI can read the configuration
+// Set these BEFORE creating the OllamaChatModel instance
 process.env.OLLAMA_MODEL = OLLAMA_MODEL;
 process.env.OLLAMA_BASE_URL = OLLAMA_BASE_URL;
+process.env.OLLAMA_API_KEY = 'ollama'; // BeeAI framework requires this to be set
 
 // Ensure BAMOE environment variables are set for child processes
 // This is critical because bamoe-direct-server.js runs as a child process
@@ -273,7 +275,9 @@ try {
 }
 
 console.log(`Initializing Ollama with model: ${OLLAMA_MODEL}, baseURL: ${OLLAMA_BASE_URL}`);
-const llm = new OllamaChatModel();
+
+// Try passing model name as string parameter to OllamaChatModel
+const llm = new OllamaChatModel(OLLAMA_MODEL);
 
 // Set up WebSocket server
 const server = app.listen(port, () => {
