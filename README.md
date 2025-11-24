@@ -46,7 +46,7 @@ A web server application to access and interact with BAMOE MCP (Model Context Pr
 ## Features
 
 - Web-based UI for interacting with BAMOE MCP server
-- Integration with Ollama LLM models
+- Built-in Ollama LLM with granite3.3:8b model pre-loaded
 - BAMOE MCP server for decision and workflow models
 - ReAct agent framework using BeeAI
 - WebSocket-based real-time communication
@@ -55,9 +55,9 @@ A web server application to access and interact with BAMOE MCP (Model Context Pr
 ## Prerequisites
 
 - Docker and Docker Compose
-- (Optional) Node.js 20+ and npm (for local development)
-- (Optional) Ollama running locally or accessible at a network endpoint
+- kubectl installed and configured with access to a Kubernetes cluster
 - Valid BAMOE deployment with accessible OpenAPI endpoint
+- (Optional) Node.js 20+ and npm (for local development)
 
 ## Quick Start with Docker Compose
 
@@ -96,10 +96,11 @@ cp .env.example .env
 
 You can customize settings like:
 - `PORT` (default: 3000)
-- `OLLAMA_MODEL` (default: granite3.3:8b)
 - `K8S_NAMESPACE` (default: local-kie-sandbox-dev-deployments)
 
-**Note:** You no longer need to set `DEPLOYMENT_ID` - it's now selected dynamically in the UI!
+**Note:**
+- Ollama with granite3.3:8b model is included and runs automatically - no setup required!
+- You no longer need to set `DEPLOYMENT_ID` - it's now selected dynamically in the UI!
 
 ### 3. Start the Application
 
@@ -148,9 +149,10 @@ This application features **dynamic deployment selection** - you no longer need 
 |----------|-------------|---------|
 | `PORT` | Web application port | `3000` |
 | `OLLAMA_MODEL` | Ollama model to use | `granite3.3:8b` |
-| `OLLAMA_HOST` | Ollama API endpoint | `http://host.docker.internal:11434/api` |
 | `BAMOE_HOST` | BAMOE server host | `host.docker.internal` |
 | `K8S_NAMESPACE` | Kubernetes namespace for BAMOE deployments | `local-kie-sandbox-dev-deployments` |
+
+**Note:** Ollama runs as a containerized service - no manual setup required!
 
 ### Kubernetes Configuration for Docker
 
@@ -294,7 +296,13 @@ The application uses a **dynamic deployment architecture**:
 
 ### Services
 
-1. **Web Application** (Always Running)
+1. **Ollama LLM Service** (Always Running)
+   - Ollama server with granite3.3:8b model pre-loaded
+   - Exposed on port 11434
+   - Provides LLM capabilities to the web application
+   - No manual setup or model pulling required
+
+2. **Web Application** (Always Running)
    - Node.js/Express server with web UI
    - Exposed on port 3000 (configurable)
    - Integrates with Ollama for LLM capabilities
@@ -302,7 +310,7 @@ The application uses a **dynamic deployment architecture**:
    - Fetches available deployments from Kubernetes
    - Manages MCP server container lifecycle
 
-2. **BAMOE MCP Server** (Deployed On-Demand)
+3. **BAMOE MCP Server** (Deployed On-Demand)
    - Automatically deployed when a user selects a deployment
    - Exposed on port 18080
    - Configured with the selected deployment's OpenAPI URL
@@ -310,7 +318,7 @@ The application uses a **dynamic deployment architecture**:
 
 ### Dynamic Deployment Workflow
 
-1. **On Startup**: Only the Web Application container starts
+1. **On Startup**: Ollama and Web Application containers start automatically
 2. **User Action**: User opens the UI and sees available deployments fetched from Kubernetes
 3. **Deployment Selection**: User selects a deployment from the dropdown
 4. **MCP Deployment**: Application automatically runs `docker run` to deploy the MCP server container with the selected deployment ID
@@ -575,38 +583,51 @@ docker-compose up -d
 
 **Solution:**
 
-1. Verify Ollama is running on your host:
+1. Verify Ollama container is running:
 ```bash
-# Test Ollama API endpoint
+docker ps --filter "name=bamoe-ollama"
+```
+
+2. Check Ollama container logs:
+```bash
+docker-compose logs ollama
+```
+
+3. Test Ollama API from your host:
+```bash
 curl http://localhost:11434/api/tags
 ```
 
-2. Test connectivity from the Docker container:
+4. Test connectivity from the web app container:
 ```bash
-docker exec bamoe-web-app wget -qO- http://host.docker.internal:11434/api/tags
+docker exec bamoe-web-app wget -qO- http://ollama:11434/api/tags
 ```
 
-3. Verify environment variables in the container:
+5. Verify environment variables in the container:
 ```bash
 docker exec bamoe-web-app sh -c 'env | grep OLLAMA'
 ```
 
 Expected output:
 ```
-OLLAMA_BASE_URL=http://host.docker.internal:11434/api
+OLLAMA_BASE_URL=http://ollama:11434/api
 OLLAMA_MODEL=granite3.3:8b
 ```
 
-**Important:** The `OLLAMA_BASE_URL` must include `/api` at the end. The application automatically appends this if missing.
-
-4. Check the application logs for Ollama initialization:
+6. Check the application logs for Ollama initialization:
 ```bash
 docker-compose logs web-app | grep "Initializing Ollama"
 ```
 
 Expected output:
 ```
-Initializing Ollama with model: granite3.3:8b, baseURL: http://host.docker.internal:11434/api
+Initializing Ollama with model: granite3.3:8b, baseURL: http://ollama:11434/api
+```
+
+7. If Ollama container is not starting, restart all services:
+```bash
+docker-compose down
+docker-compose up -d
 ```
 
 ### BAMOE Connection Issues
@@ -698,7 +719,7 @@ docker exec bamoe-web-app sh -c 'env | grep -E "OLLAMA|BAMOE|K8S"'
 
 Expected output:
 ```
-OLLAMA_BASE_URL=http://host.docker.internal:11434/api
+OLLAMA_BASE_URL=http://ollama:11434/api
 OLLAMA_MODEL=granite3.3:8b
 BAMOE_HOST=host.docker.internal
 K8S_NAMESPACE=local-kie-sandbox-dev-deployments
@@ -741,6 +762,10 @@ Common agent errors:
 
 **Test Ollama directly:**
 ```bash
+# Test if Ollama is running
+curl http://localhost:11434/api/tags
+
+# Test chat endpoint
 curl -X POST http://localhost:11434/api/chat \
   -H "Content-Type: application/json" \
   -d '{
@@ -811,15 +836,26 @@ docker-compose logs -f
 
 If Ollama responses are slow:
 
-1. Check Ollama is using GPU acceleration (if available)
-2. Try a smaller model in `.env`:
-```env
-OLLAMA_MODEL=granite3.3:2b
+1. Check if GPU support is available and enable it in docker-compose.yml:
+```yaml
+ollama:
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: 1
+            capabilities: [gpu]
 ```
 
-3. Monitor resource usage:
+2. Monitor resource usage:
 ```bash
 docker stats
+```
+
+3. Check Ollama container logs for GPU detection:
+```bash
+docker-compose logs ollama | grep -i gpu
 ```
 
 ## MCP Server Configuration

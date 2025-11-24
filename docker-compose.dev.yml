@@ -1,4 +1,22 @@
 services:
+  # Ollama LLM Service (with granite3.3:8b pre-loaded)
+  ollama:
+    image: quay.io/pamoe/ollama:latest
+    container_name: bamoe-ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - bamoe-network
+    restart: unless-stopped
+    # Add GPU support if available (optional)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
   # BAMOE MCP Server
   # NOTE: MCP server is now deployed dynamically when a deployment is selected in the UI
   # The container will be created using 'docker run' with the selected deployment ID
@@ -27,8 +45,8 @@ services:
     environment:
       - PORT=${PORT:-3000}
       - BAMOE_HOST=host.docker.internal
-      - OLLAMA_MODEL=${OLLAMA_MODEL:-granite3.2:8b}
-      - OLLAMA_BASE_URL=${OLLAMA_HOST:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-granite3.3:8b}
+      - OLLAMA_BASE_URL=http://ollama:11434
       - K8S_NAMESPACE=${K8S_NAMESPACE:-local-kie-sandbox-dev-deployments}
       - IS_DOCKER=true
     volumes:
@@ -37,6 +55,8 @@ services:
     networks:
       - bamoe-network
     restart: unless-stopped
+    depends_on:
+      - ollama
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
