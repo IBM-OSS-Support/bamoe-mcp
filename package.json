@@ -12,10 +12,16 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.8.0",
-    "beeai-framework": "^0.1.10",
+    "beeai-framework": "0.1.20",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "ws": "^8.18.1"
+  },
+  "overrides": {
+  "form-data": "4.0.4",
+  "cross-spawn": "7.0.5",
+  "glob": "11.1.0",
+  "@qdrant/js-client-rest": "1.15.0"
   },
   "keywords": [
     "MCP",
