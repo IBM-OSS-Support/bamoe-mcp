@@ -1,4 +1,41 @@
 services:
+  # Setup service to create Docker-specific kubeconfig
+  setup-kubeconfig:
+    image: alpine:latest
+    container_name: bamoe-kubeconfig-setup
+    volumes:
+      - ${HOME}/.kube:/root/.kube
+    command:
+      - sh
+      - -c
+      - |
+        if [ ! -f /root/.kube/config ]; then
+          echo 'ERROR: Kubernetes config not found at ~/.kube/config'
+          echo 'Please ensure kubectl is configured before running docker-compose.'
+          exit 1
+        fi
+        echo 'Creating Docker-specific kubeconfig...'
+        sed -e 's|https://127.0.0.1:|https://host.docker.internal:|g' \
+            -e 's|https://localhost:|https://host.docker.internal:|g' \
+            -e 's|http://127.0.0.1:|http://host.docker.internal:|g' \
+            -e 's|http://localhost:|http://host.docker.internal:|g' \
+            -e 's|https://0.0.0.0:|https://host.docker.internal:|g' \
+            -e 's|http://0.0.0.0:|http://host.docker.internal:|g' \
+            /root/.kube/config > /root/.kube/config.docker
+        echo '✓ Docker-specific kubeconfig created at ~/.kube/config.docker'
+        echo 'Transformed server URL:'
+        grep -i server /root/.kube/config.docker
+
+  # Ollama LLM Service with pre-loaded granite3.3:8b model
+  ollama:
+    image: quay.io/pamoe/ollama:latest
+    container_name: bamoe-ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - bamoe-network
+    restart: unless-stopped
+
   # BAMOE MCP Web Application
   web-app:
     image: quay.io/pamoe/bamoe-mcp-web-app:latest
@@ -9,7 +46,7 @@ services:
       - PORT=${PORT:-3000}
       - BAMOE_HOST=host.docker.internal
       - OLLAMA_MODEL=${OLLAMA_MODEL:-granite3.3:8b}
-      - OLLAMA_BASE_URL=${OLLAMA_HOST:-http://host.docker.internal:11434}
+      - OLLAMA_BASE_URL=${OLLAMA_HOST:-http://ollama:11434}
       - K8S_NAMESPACE=${K8S_NAMESPACE:-local-kie-sandbox-dev-deployments}
       - IS_DOCKER=true
     volumes:
@@ -17,6 +54,11 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - bamoe-network
+    depends_on:
+      setup-kubeconfig:
+        condition: service_completed_successfully
+      ollama:
+        condition: service_started
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"

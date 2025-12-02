@@ -10,9 +10,10 @@ To run the BAMOE MCP Web App, you only need:
 1. **docker-compose.yml** - The Docker Compose file
 2. **.env.example** - Environment variable template (optional)
 3. **Docker and Docker Compose** installed on your machine
-4. **Ollama** running locally (for LLM capabilities)
-5. **kubectl** configured with access to a Kubernetes cluster with BAMOE deployments
-6. **Docker-specific kubeconfig** (see setup below)
+4. **kubectl** configured with access to a Kubernetes cluster with BAMOE deployments
+5. **Docker-specific kubeconfig** (see setup below)
+
+**Note:** Ollama with granite3.3:8b model is included in the Docker setup - no manual installation required!
 
 ### Quick Start
 
@@ -144,10 +145,10 @@ docker-compose down
 
 The distribution setup maintains all the functionality of the original application:
 
-1. **Web App Container**: Runs the Express server and serves the UI (from pre-built image)
-2. **Dynamic MCP Server Deployment**: The web app automatically deploys MCP server containers on-demand when you select a deployment
-3. **Kubernetes Integration**: Fetches available BAMOE deployments from your cluster
-4. **Ollama Integration**: Uses your local Ollama instance for LLM capabilities
+1. **Ollama Container**: Runs Ollama with granite3.3:8b model pre-loaded (from pre-built image)
+2. **Web App Container**: Runs the Express server and serves the UI (from pre-built image)
+3. **Dynamic MCP Server Deployment**: The web app automatically deploys MCP server containers on-demand when you select a deployment
+4. **Kubernetes Integration**: Fetches available BAMOE deployments from your cluster
 
 ### Prerequisites Details
 
@@ -160,25 +161,7 @@ docker --version
 docker-compose --version
 ```
 
-#### 2. Ollama (Local LLM)
-Install from: https://ollama.ai
-
-Start Ollama and pull the required model:
-```bash
-ollama pull granite3.3:8b
-```
-
-Verify Ollama is running:
-```bash
-# On macOS/Linux:
-curl http://localhost:11434/api/tags
-
-# On Windows (PowerShell):
-curl http://localhost:11434/api/tags
-# or: Invoke-WebRequest -Uri http://localhost:11434/api/tags
-```
-
-#### 3. Kubernetes Access
+#### 2. Kubernetes Access
 Ensure you have kubectl configured with access to your Kubernetes cluster:
 ```bash
 kubectl get services -n local-kie-sandbox-dev-deployments
@@ -215,7 +198,17 @@ kubectl --kubeconfig $HOME\.kube\config.docker get services -n local-kie-sandbox
 
 #### Ollama connection errors?
 
-1. Verify Ollama is running:
+1. Verify Ollama container is running:
+```bash
+docker ps --filter "name=bamoe-ollama"
+```
+
+2. Check Ollama container logs:
+```bash
+docker-compose logs ollama
+```
+
+3. Test Ollama API:
 ```bash
 # On macOS/Linux:
 curl http://localhost:11434/api/tags
@@ -226,13 +219,10 @@ curl http://localhost:11434/api/tags
 Invoke-WebRequest -Uri http://localhost:11434/api/tags
 ```
 
-2. Check Ollama has the required model:
+4. If Ollama container is not starting, restart services:
 ```bash
-# On macOS/Linux:
-ollama list | grep granite3.3
-
-# On Windows (PowerShell):
-ollama list | Select-String granite3.3
+docker-compose down
+docker-compose up -d
 ```
 
 #### View application logs?
@@ -279,9 +269,10 @@ docker rm $(docker ps -aq --filter "name=bamoe-mcp-server") 2>/dev/null || true
 |----------|-------------|---------|
 | `PORT` | Web application port | `3000` |
 | `OLLAMA_MODEL` | Ollama model to use | `granite3.3:8b` |
-| `OLLAMA_HOST` | Ollama API endpoint | `http://host.docker.internal:11434` |
 | `BAMOE_HOST` | BAMOE server host | `host.docker.internal` |
 | `K8S_NAMESPACE` | Kubernetes namespace for BAMOE deployments | `local-kie-sandbox-dev-deployments` |
+
+**Note:** Ollama runs as a containerized service - no manual configuration needed!
 
 ### Distribution Package
 
@@ -290,7 +281,7 @@ For easy distribution to users, provide these files:
 - `.env.example` - Environment template
 - `QUICKSTART.md` - This file (setup instructions)
 
-Users only need these three files plus Docker, Ollama, and kubectl configured!
+Users only need these three files plus Docker and kubectl configured! Ollama is included automatically.
 
 ### Support
 
